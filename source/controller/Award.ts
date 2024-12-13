@@ -11,7 +11,7 @@ import {
     OnUndefined,
     Param,
     Patch,
-    Put
+    Post
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
@@ -20,36 +20,45 @@ import { dataSource, Hackathon, User, Award, Media } from '../model';
 import { HackathonController } from './Hackathon';
 import { ActivityLogController } from './ActivityLog';
 
-@JsonController('/hackathon/:hackathonName/award/:awardId')
+@JsonController('/hackathon/:hackathonName/award')
 export class AwardController {
     store = dataSource.getRepository(Award);
     hackathonStore = dataSource.getRepository(Hackathon);
 
-    @Put('/:uid')
+    @Post()
     @Authorized()
     @HttpCode(201)
     @ResponseSchema(Award)
     async createOne(
-        @Param('name') name: string,
-        @Param('description') description: string,
-        @Param('quantity') quantity: number,
-        @Param('target') target: 'team' | 'individual',
-        @Param('pictures') pictures: Media[]
+        @CurrentUser() currentUser: User,
+        @Param('hackathonName') hackathonName: string,
+        @Body()
+        awardData: {
+            name: string;
+            description: string;
+            quantity: number;
+            target: 'team' | 'individual';
+            pictures: Media[];
+        }
     ) {
-        const hackathon = await this.hackathonStore.findOneBy({ name });
+        const hackathon = await this.hackathonStore.findOneBy({
+            name: hackathonName
+        });
         if (!hackathon) throw new NotFoundError('Hackathon not found');
 
-        const saved = await this.store.save({
-            name,
-            description,
-            quantity,
-            target,
-            pictures
+        await HackathonController.ensureAdmin(currentUser.id, hackathonName);
+
+        const award = this.store.create({
+            ...awardData,
+            hackathon
         });
+
+        const saved = await this.store.save(award);
+        await ActivityLogController.logCreate(currentUser, 'Award', saved.id);
         return saved;
     }
 
-    @Get('/:hackathonName/:awardId')
+    @Get('/:awardId')
     @OnNull(404)
     @ResponseSchema(Award)
     async getOne(
@@ -70,10 +79,11 @@ export class AwardController {
         return award;
     }
 
-    @Patch('/:hackathonName/:awardId')
+    @Patch('/:awardId')
     @Authorized()
     @ResponseSchema(Award)
     async updateOne(
+        @CurrentUser() currentUser: User,
         @Param('hackathonName') hackathonName: string,
         @Param('awardId') awardId: number,
         @Body()
@@ -93,19 +103,19 @@ export class AwardController {
 
         if (!award) throw new NotFoundError('Award not found');
 
-        // use Object.assign update data
-        Object.assign(award, updateData);
+        await HackathonController.ensureAdmin(currentUser.id, hackathonName);
 
+        Object.assign(award, updateData);
         const saved = await this.store.save(award);
+        await ActivityLogController.logUpdate(currentUser, 'Award', saved.id);
         return saved;
     }
 
-    @Delete('/:hackathonName/:announcementId')
+    @Delete('/:awardId')
     @Authorized()
     @OnUndefined(204)
-    @ResponseSchema(Award)
     async deleteOne(
-        @CurrentUser() deletedBy: User,
+        @CurrentUser() currentUser: User,
         @Param('hackathonName') hackathonName: string,
         @Param('awardId') awardId: number
     ) {
@@ -118,12 +128,8 @@ export class AwardController {
 
         if (!award) throw new NotFoundError('Award not found');
 
-        await HackathonController.ensureAdmin(
-            award.hackathon.createdBy.id,
-            hackathonName
-        );
+        await HackathonController.ensureAdmin(currentUser.id, hackathonName);
         await this.store.softDelete(award.id);
-
-        await ActivityLogController.logDelete(deletedBy, 'Award', award.id);
+        await ActivityLogController.logDelete(currentUser, 'Award', award.id);
     }
 }
