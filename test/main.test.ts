@@ -338,4 +338,128 @@ describe('Main business logic', () => {
 
         expect(hackathonList).toEqual({ count: 0, list: [] });
     });
+
+    // Award API tests
+    let testAward: any;
+
+    it('should create an award for the hackathon', async () => {
+        const awardData = {
+            name: 'Best Innovation Award',
+            description: 'Award for the most innovative project',
+            quantity: 1,
+            target: 'team' as const,
+            pictures: [
+                {
+                    name: 'award-image',
+                    description: 'Award trophy image',
+                    uri: 'https://example.com/award.png'
+                }
+            ]
+        };
+
+        const { data: award } = await client.award.awardControllerCreateOne(
+            testHackathon.name,
+            awardData,
+            {
+                headers: {
+                    Authorization: `Bearer ${hackathonCreator.token}`
+                }
+            }
+        );
+
+        expect(award).toMatchObject({
+            ...awardData,
+            id: expect.any(Number),
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
+            hackathon: expect.any(Object)
+        });
+
+        testAward = award;
+    });
+
+    it('should get an award by id', async () => {
+        const { data: award } = await client.award.awardControllerGetOne(
+            testHackathon.name,
+            testAward.id
+        );
+
+        expect(award).toMatchObject({
+            id: testAward.id,
+            name: testAward.name,
+            description: testAward.description,
+            quantity: testAward.quantity,
+            target: testAward.target,
+            pictures: testAward.pictures
+        });
+    });
+
+    it('should update an award', async () => {
+        const updateData = {
+            name: 'Updated Award Name',
+            description: 'Updated award description',
+            quantity: 2
+        };
+
+        const { data: award } = await client.award.awardControllerUpdateOne(
+            testHackathon.name,
+            testAward.id,
+            updateData,
+            {
+                headers: {
+                    Authorization: `Bearer ${hackathonCreator.token}`
+                }
+            }
+        );
+
+        expect(award).toMatchObject({
+            ...testAward,
+            ...updateData,
+            updatedAt: expect.any(String)
+        });
+
+        testAward = award;
+    });
+
+    it('should delete an award', async () => {
+        await client.award.awardControllerDeleteOne(
+            testHackathon.name,
+            testAward.id,
+            {
+                headers: {
+                    Authorization: `Bearer ${hackathonCreator.token}`
+                }
+            }
+        );
+
+        try {
+            await client.award.awardControllerGetOne(
+                testHackathon.name,
+                testAward.id
+            );
+            fail('Should have thrown a 404 error');
+        } catch (error: any) {
+            expect(error.status).toBe(404);
+        }
+    });
+
+    it('should not allow unauthorized users to manage awards', async () => {
+        const awardData = {
+            name: 'Unauthorized Award',
+            description: 'This should fail',
+            quantity: 1,
+            target: 'team' as const,
+            pictures: []
+        };
+
+        try {
+            await client.award.awardControllerCreateOne(
+                testHackathon.name,
+                awardData
+            );
+            fail('Should have thrown a 401 error');
+        } catch (error: any) {
+            expect(error.status).toBe(401);
+        }
+    });
 });
