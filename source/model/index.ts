@@ -16,6 +16,7 @@ import { Enrollment } from './Enrollment';
 import { Team } from './Team';
 import { TeamMember } from './TeamMember';
 import { TeamWork } from './TeamWork';
+import { Award } from './Award';
 
 export * from './Base';
 export * from './User';
@@ -60,7 +61,8 @@ const commonOptions: Pick<
         Team,
         TeamMember,
         TeamWork,
-        Evaluation
+        Evaluation,
+        Award
     ],
     migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`]
 };
