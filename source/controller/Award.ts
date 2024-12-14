@@ -48,12 +48,10 @@ export class AwardController {
 
         await HackathonController.ensureAdmin(currentUser.id, hackathonName);
 
-        const award = this.store.create({
+        const saved = this.store.save({
             ...awardData,
             hackathon
         });
-
-        const saved = await this.store.save(award);
         await ActivityLogController.logCreate(currentUser, 'Award', saved.id);
         return saved;
     }
@@ -65,12 +63,10 @@ export class AwardController {
         @Param('hackathonName') hackathonName: string,
         @Param('awardId') awardId: number
     ) {
-        const award = await this.store
-            .createQueryBuilder('award')
-            .innerJoinAndSelect('award.hackathon', 'hackathon')
-            .where('hackathon.name = :hackathonName', { hackathonName })
-            .andWhere('award.id = :awardId', { awardId })
-            .getOne();
+        const award = await this.store.findOneBy({
+            id: awardId,
+            hackathon: { name: hackathonName }
+        });
 
         if (!award) {
             return null;
@@ -87,19 +83,12 @@ export class AwardController {
         @Param('hackathonName') hackathonName: string,
         @Param('awardId') awardId: number,
         @Body()
-        updateData: Partial<
-            Pick<
-                Award,
-                'name' | 'description' | 'quantity' | 'target' | 'pictures'
-            >
-        >
+        updateData: Award
     ) {
-        const award = await this.store
-            .createQueryBuilder('award')
-            .innerJoinAndSelect('award.hackathon', 'hackathon')
-            .where('hackathon.name = :hackathonName', { hackathonName })
-            .andWhere('award.id = :awardId', { awardId })
-            .getOne();
+        const award = await this.store.findOneBy({
+            id: awardId,
+            hackathon: { name: hackathonName }
+        });
 
         if (!award) throw new NotFoundError('Award not found');
 
@@ -119,12 +108,10 @@ export class AwardController {
         @Param('hackathonName') hackathonName: string,
         @Param('awardId') awardId: number
     ) {
-        const award = await this.store
-            .createQueryBuilder('award')
-            .innerJoinAndSelect('award.hackathon', 'hackathon')
-            .where('hackathon.name = :hackathonName', { hackathonName })
-            .andWhere('award.id = :awardId', { awardId })
-            .getOne();
+        const award = await this.store.findOneBy({
+            id: awardId,
+            hackathon: { name: hackathonName }
+        });
 
         if (!award) throw new NotFoundError('Award not found');
 
