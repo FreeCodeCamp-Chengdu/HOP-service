@@ -18,6 +18,7 @@ import { TeamController } from './Team';
 import { TeamMemberController } from './TeamMember';
 import { TeamWorkController } from './TeamWork';
 import { EvaluationController } from './Evaluation';
+import { AwardController } from './Award';
 
 export * from './Base';
 export * from './User';
@@ -35,6 +36,7 @@ export * from './Team';
 export * from './TeamMember';
 export * from './TeamWork';
 export * from './Evaluation';
+export * from './Award';
 
 export const controllers = [
     OauthController,
@@ -52,7 +54,8 @@ export const controllers = [
     TeamMemberController,
     TeamController,
     HackathonController,
-    BaseController
+    BaseController,
+    AwardController
 ];
 
 export const { swagger, mocker, router } = createAPI({
