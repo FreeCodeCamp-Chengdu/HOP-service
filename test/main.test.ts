@@ -1,6 +1,7 @@
 import { Day, formatDate } from 'web-utility';
 
 import {
+    Award,
     Hackathon,
     HackathonStatus,
     Operation,
@@ -319,28 +320,8 @@ describe('Main business logic', () => {
         expect(list1.count).toBe(list2.count);
     });
 
-    it('should delete a hackathon by its admin', async () => {
-        const { name } = testHackathon;
-        const { status, data } =
-            await client.hackathon.hackathonControllerDeleteOne(name, {
-                headers: { Authorization: `Bearer ${hackathonCreator.token}` }
-            });
-        expect(status).toBe(204);
-        expect(data).toBeNull();
-
-        try {
-            await client.hackathon.hackathonControllerGetOne(name);
-        } catch (error) {
-            expect((error as HttpResponse<any>).status).toBe(404);
-        }
-        const { data: hackathonList } =
-            await client.hackathon.hackathonControllerGetList();
-
-        expect(hackathonList).toEqual({ count: 0, list: [] });
-    });
-
     // Award API tests
-    let testAward: any;
+    let testAward: Award;
 
     it('should create an award for the hackathon', async () => {
         const awardData = {
@@ -374,8 +355,7 @@ describe('Main business logic', () => {
             updatedAt: expect.any(String),
             hackathon: expect.any(Object)
         });
-
-        testAward = award;
+        expect(award.hackathon.id).toBe(testHackathon.id);
     });
 
     it('should get an award by id', async () => {
@@ -418,7 +398,7 @@ describe('Main business logic', () => {
             updatedAt: expect.any(String)
         });
 
-        testAward = award;
+        expect(award.hackathon.id).toBe(testHackathon.id);
     });
 
     it('should delete an award', async () => {
@@ -444,22 +424,37 @@ describe('Main business logic', () => {
     });
 
     it('should not allow unauthorized users to manage awards', async () => {
-        const awardData = {
-            name: 'Unauthorized Award',
-            description: 'This should fail',
-            quantity: 1,
-            target: 'team' as const,
-            pictures: []
-        };
-
         try {
-            await client.award.awardControllerCreateOne(
-                testHackathon.name,
-                awardData
-            );
+            await client.award.awardControllerCreateOne(testHackathon.name, {
+                name: 'Unauthorized Award',
+                description: 'Test award description',
+                quantity: 1,
+                target: 'team',
+                pictures: []
+            });
             fail('Should have thrown a 401 error');
         } catch (error: any) {
             expect(error.status).toBe(401);
         }
+    });
+
+    it('should delete a hackathon by its admin', async () => {
+        const { name } = testHackathon;
+        const { status, data } =
+            await client.hackathon.hackathonControllerDeleteOne(name, {
+                headers: { Authorization: `Bearer ${hackathonCreator.token}` }
+            });
+        expect(status).toBe(204);
+        expect(data).toBeNull();
+
+        try {
+            await client.hackathon.hackathonControllerGetOne(name);
+        } catch (error) {
+            expect((error as HttpResponse<any>).status).toBe(404);
+        }
+        const { data: hackathonList } =
+            await client.hackathon.hackathonControllerGetList();
+
+        expect(hackathonList).toEqual({ count: 0, list: [] });
     });
 });
