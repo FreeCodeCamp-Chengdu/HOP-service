@@ -15,7 +15,14 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { dataSource, Hackathon, User, Award, Media } from '../model';
+import {
+    dataSource,
+    Hackathon,
+    User,
+    Award,
+    Media,
+    AwardTarget
+} from '../model';
 
 import { HackathonController } from './Hackathon';
 import { ActivityLogController } from './ActivityLog';
@@ -37,7 +44,7 @@ export class AwardController {
             name: string;
             description: string;
             quantity: number;
-            target: 'team' | 'individual';
+            target: AwardTarget;
             pictures: Media[];
         }
     ) {

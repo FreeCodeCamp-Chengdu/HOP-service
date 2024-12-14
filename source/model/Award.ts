@@ -1,9 +1,22 @@
 import { Column, Entity, ManyToOne } from 'typeorm';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import {
+    IsInt,
+    IsOptional,
+    IsString,
+    IsEnum,
+    IsObject,
+    ValidateNested
+} from 'class-validator';
+
 import { Base, Media } from './Base';
 import { Team } from './Team';
 import { User } from './User';
 import { HackathonBase } from './Hackathon';
+
+export enum AwardTarget {
+    Team = 'team',
+    Individual = 'individual'
+}
 
 @Entity()
 export class Award extends HackathonBase {
@@ -13,7 +26,7 @@ export class Award extends HackathonBase {
 
     @IsString()
     @IsOptional()
-    @Column()
+    @Column({ nullable: true })
     description: string;
 
     @IsInt()
@@ -21,21 +34,14 @@ export class Award extends HackathonBase {
     @Column()
     quantity: number;
 
-    @IsString()
+    @IsEnum(AwardTarget)
     @IsOptional()
-    @Column()
-    target: 'team' | 'individual';
+    @Column({ type: 'simple-enum', enum: AwardTarget, nullable: true })
+    target: AwardTarget;
 
-    @Column()
+    @IsObject({ each: true })
+    @ValidateNested()
     @IsOptional()
-    pictures: Media[];
-}
-
-export interface AwardAssignment
-    extends Omit<Base, 'id'>,
-        Omit<Award, 'name' | 'quantity' | 'target' | 'pictures'>,
-        Record<'assignmentId' | 'assigneeId' | 'awardId', string> {
-    user?: User;
-    team?: Team;
-    award: Award;
+    @Column({ type: 'simple-json', nullable: true })
+    pictures?: Media[];
 }
