@@ -55,7 +55,7 @@ export class AwardController {
 
         await HackathonController.ensureAdmin(currentUser.id, hackathonName);
 
-        const saved = this.store.save({
+        const saved = await this.store.save({
             ...awardData,
             hackathon
         });
