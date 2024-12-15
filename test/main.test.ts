@@ -338,7 +338,7 @@ describe('Main business logic', () => {
             ]
         };
 
-        const { data: award } = await client.award.awardControllerCreateOne(
+        const { data: award } = await client.hackathon.awardControllerCreateOne(
             testHackathon.name,
             awardData,
             {
@@ -359,7 +359,7 @@ describe('Main business logic', () => {
     });
 
     it('should get an award by id', async () => {
-        const { data: award } = await client.award.awardControllerGetOne(
+        const { data: award } = await client.hackathon.awardControllerGetOne(
             testHackathon.name,
             testAward.id
         );
@@ -381,7 +381,7 @@ describe('Main business logic', () => {
             quantity: 2
         };
 
-        const { data: award } = await client.award.awardControllerUpdateOne(
+        const { data: award } = await client.hackathon.awardControllerUpdateOne(
             testHackathon.name,
             testAward.id,
             updateData,
@@ -402,7 +402,7 @@ describe('Main business logic', () => {
     });
 
     it('should delete an award', async () => {
-        await client.award.awardControllerDeleteOne(
+        await client.hackathon.awardControllerDeleteOne(
             testHackathon.name,
             testAward.id,
             {
@@ -413,7 +413,7 @@ describe('Main business logic', () => {
         );
 
         try {
-            await client.award.awardControllerGetOne(
+            await client.hackathon.awardControllerGetOne(
                 testHackathon.name,
                 testAward.id
             );
@@ -425,13 +425,16 @@ describe('Main business logic', () => {
 
     it('should not allow unauthorized users to manage awards', async () => {
         try {
-            await client.award.awardControllerCreateOne(testHackathon.name, {
-                name: 'Unauthorized Award',
-                description: 'Test award description',
-                quantity: 1,
-                target: 'team',
-                pictures: []
-            });
+            await client.hackathon.awardControllerCreateOne(
+                testHackathon.name,
+                {
+                    name: 'Unauthorized Award',
+                    description: 'Test award description',
+                    quantity: 1,
+                    target: 'team',
+                    pictures: []
+                }
+            );
             fail('Should have thrown a 401 error');
         } catch (error: any) {
             expect(error.status).toBe(401);
