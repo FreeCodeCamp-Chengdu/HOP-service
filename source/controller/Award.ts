@@ -40,18 +40,13 @@ export class AwardController {
         @CurrentUser() currentUser: User,
         @Param('hackathonName') hackathonName: string,
         @Body()
-        awardData: {
-            name: string;
-            description: string;
-            quantity: number;
-            target: AwardTarget;
-            pictures: Media[];
-        }
+        awardData: Award
     ) {
         const hackathon = await this.hackathonStore.findOneBy({
             name: hackathonName
         });
-        if (!hackathon) throw new NotFoundError('Hackathon not found');
+        if (!hackathon)
+            throw new NotFoundError(`Hackathon ${hackathon} is not found`);
 
         await HackathonController.ensureAdmin(currentUser.id, hackathonName);
 
