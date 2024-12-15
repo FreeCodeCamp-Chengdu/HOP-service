@@ -53,9 +53,9 @@ export const controllers = [
     TeamWorkController,
     TeamMemberController,
     TeamController,
+    AwardController,
     HackathonController,
-    BaseController,
-    AwardController
+    BaseController
 ];
 
 export const { swagger, mocker, router } = createAPI({
