@@ -61,20 +61,8 @@ export class AwardController {
     @Get('/:awardId')
     @OnNull(404)
     @ResponseSchema(Award)
-    async getOne(
-        @Param('hackathonName') hackathonName: string,
-        @Param('awardId') awardId: number
-    ) {
-        const award = await this.store.findOneBy({
-            id: awardId,
-            hackathon: { name: hackathonName }
-        });
-
-        if (!award) {
-            return null;
-        }
-
-        return award;
+    async getOne(@Param('awardId') id: number) {
+        return this.store.findOneBy({ id });
     }
 
     @Patch('/:awardId')

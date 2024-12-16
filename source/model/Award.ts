@@ -5,13 +5,15 @@ import {
     IsString,
     IsEnum,
     IsObject,
-    ValidateNested
+    ValidateNested,
+    Min
 } from 'class-validator';
 
 import { Base, Media } from './Base';
 import { Team } from './Team';
 import { User } from './User';
 import { HackathonBase } from './Hackathon';
+import { Type } from 'class-transformer';
 
 export enum AwardTarget {
     Team = 'team',
@@ -30,6 +32,7 @@ export class Award extends HackathonBase {
     description?: string;
 
     @IsInt()
+    @Min(0)
     @IsOptional()
     @Column({ nullable: true })
     quantity?: number;
@@ -39,8 +42,8 @@ export class Award extends HackathonBase {
     @Column({ type: 'simple-enum', enum: AwardTarget, nullable: true })
     target: AwardTarget;
 
-    @IsObject({ each: true })
-    @ValidateNested()
+    @Type(() => Media)
+    @ValidateNested({ each: true })
     @IsOptional()
     @Column({ type: 'simple-json', nullable: true })
     pictures?: Media[];
