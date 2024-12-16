@@ -27,12 +27,12 @@ export class Award extends HackathonBase {
     @IsString()
     @IsOptional()
     @Column({ nullable: true })
-    description: string;
+    description?: string;
 
     @IsInt()
     @IsOptional()
-    @Column()
-    quantity: number;
+    @Column({ nullable: true })
+    quantity?: number;
 
     @IsEnum(AwardTarget)
     @IsOptional()

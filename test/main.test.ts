@@ -2,6 +2,7 @@ import { Day, formatDate } from 'web-utility';
 
 import {
     Award,
+    AwardTarget,
     Hackathon,
     HackathonStatus,
     Operation,
@@ -13,7 +14,8 @@ import { client, GITHUB_PAT } from './shared';
 var platformAdmin: User,
     hackathonCreator: User,
     testHackathon: Hackathon,
-    teamLeader1: User;
+    teamLeader1: User,
+    testAward: Award;
 
 describe('Main business logic', () => {
     it('should response 401 error with invalid token', async () => {
@@ -321,14 +323,12 @@ describe('Main business logic', () => {
     });
 
     // Award API tests
-    let testAward: Award;
-
     it('should create an award for the hackathon', async () => {
         const awardData = {
             name: 'Best Innovation Award',
             description: 'Award for the most innovative project',
             quantity: 1,
-            target: 'team' as const,
+            target: AwardTarget.Team,
             pictures: [
                 {
                     name: 'award-image',
@@ -347,6 +347,8 @@ describe('Main business logic', () => {
                 }
             }
         );
+
+        testAward = award;
 
         expect(award).toMatchObject({
             ...awardData,
@@ -431,7 +433,7 @@ describe('Main business logic', () => {
                     name: 'Unauthorized Award',
                     description: 'Test award description',
                     quantity: 1,
-                    target: 'team',
+                    target: AwardTarget.Team,
                     pictures: []
                 }
             );
