@@ -39,8 +39,7 @@ export class AwardController {
     async createOne(
         @CurrentUser() currentUser: User,
         @Param('hackathonName') hackathonName: string,
-        @Body()
-        awardData: Award
+        @Body() awardData: Award
     ) {
         const hackathon = await this.hackathonStore.findOneBy({
             name: hackathonName
