@@ -1,14 +1,13 @@
 import { Day, formatDate } from 'web-utility';
 
 import {
-    Award,
     AwardTarget,
     Hackathon,
     HackathonStatus,
     Operation,
     StaffType
 } from '../source/model';
-import { HttpResponse, User } from './client';
+import { HttpResponse, User, Award } from './client';
 import { client, GITHUB_PAT } from './shared';
 
 var platformAdmin: User,
