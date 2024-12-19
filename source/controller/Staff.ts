@@ -33,8 +33,9 @@ import { HackathonController } from './Hackathon';
 const store = dataSource.getRepository(Staff),
     userStore = dataSource.getRepository(User),
     hackathonStore = dataSource.getRepository(Hackathon);
+const StaffTypeRegExp = Object.values(StaffType).join('|');
 
-@JsonController('/hackathon/:name/:type')
+@JsonController(`/hackathon/:name/:type(${StaffTypeRegExp})`)
 export class StaffController {
     static async isAdmin(userId: number, hackathonName: string) {
         const staff = await store.findOneBy({
