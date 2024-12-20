@@ -10,6 +10,7 @@ import {
 import { Column, Entity, ViewColumn, ViewEntity } from 'typeorm';
 
 import { Announcement } from './Announcement';
+import { Award } from './Award';
 import { Base, BaseFilter, InputData, ListChunk } from './Base';
 import { Enrollment } from './Enrollment';
 import { GitTemplate } from './GitTemplate';
@@ -22,7 +23,6 @@ import { Team } from './Team';
 import { TeamMember } from './TeamMember';
 import { TeamWork } from './TeamWork';
 import { User, UserBase } from './User';
-import { Award } from './Award';
 
 export enum Operation {
     Create = 'create',
@@ -36,6 +36,7 @@ export const LogableTable = {
     Hackathon,
     Staff,
     Organizer,
+    Award,
     Announcement,
     GitTemplate,
     Questionnaire,
@@ -44,8 +45,7 @@ export const LogableTable = {
     Team,
     TeamMember,
     TeamWork,
-    Evaluation,
-    Award
+    Evaluation
 };
 const LogableTableEnum = Object.fromEntries(
     Object.entries(LogableTable).map(([key]) => [key, key])

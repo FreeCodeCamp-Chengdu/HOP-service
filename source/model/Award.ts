@@ -37,7 +37,7 @@ export class Award extends HackathonBase {
     @IsEnum(AwardTarget)
     @IsOptional()
     @Column({ type: 'simple-enum', enum: AwardTarget, nullable: true })
-    target: AwardTarget;
+    target?: AwardTarget;
 
     @Type(() => Media)
     @ValidateNested({ each: true })

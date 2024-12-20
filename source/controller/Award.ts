@@ -10,22 +10,16 @@ import {
     OnNull,
     OnUndefined,
     Param,
-    Patch,
-    Post
+    Post,
+    Put
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    Award,
-    AwardTarget,
-    dataSource,
-    Hackathon,
-    Media,
-    User} from '../model';
+import { Award, dataSource, Hackathon, User } from '../model';
 import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 
-@JsonController('/hackathon/:hackathonName/award')
+@JsonController('/hackathon/:name/award')
 export class AwardController {
     store = dataSource.getRepository(Award);
     hackathonStore = dataSource.getRepository(Hackathon);
@@ -36,81 +30,75 @@ export class AwardController {
     @ResponseSchema(Award)
     async createOne(
         @CurrentUser() currentUser: User,
-        @Param('hackathonName') hackathonName: string,
-        @Body() awardData: Award
+        @Param('name') name: string,
+        @Body() award: Award
     ) {
-        const hackathon = await this.hackathonStore.findOneBy({
-            name: hackathonName
-        });
+        const hackathon = await this.hackathonStore.findOneBy({ name });
+
         if (!hackathon)
-            throw new NotFoundError(`Hackathon ${hackathon} is not found`);
+            throw new NotFoundError(`Hackathon ${name} is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, hackathonName);
+        await HackathonController.ensureAdmin(currentUser.id, name);
 
-        const saved = await this.store.save({
-            ...awardData,
-            hackathon
-        });
+        const saved = await this.store.save({ ...award, hackathon });
+
         await ActivityLogController.logCreate(currentUser, 'Award', saved.id);
+
         return saved;
     }
 
-    @Get('/:awardId')
+    @Get('/:id')
     @OnNull(404)
     @ResponseSchema(Award)
-    async getOne(@Param('awardId') id: number) {
+    getOne(@Param('id') id: number) {
         return this.store.findOneBy({ id });
     }
 
-    @Patch('/:awardId')
+    @Put('/:id')
     @Authorized()
     @ResponseSchema(Award)
     async updateOne(
         @CurrentUser() currentUser: User,
-        @Param('hackathonName') hackathonName: string,
-        @Param('awardId') awardId: number,
-        @Body()
-        updateData: Award
+        @Param('name') name: string,
+        @Param('id') id: number,
+        @Body() updateData: Award
     ) {
-        const award = await this.store.findOneBy({
-            id: awardId,
-            hackathon: { name: hackathonName }
-        });
+        const award = await this.store.findOneBy({ id });
 
-        if (!award) throw new NotFoundError('Award not found');
+        if (!award) throw new NotFoundError(`Award ${id} is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, hackathonName);
+        await HackathonController.ensureAdmin(currentUser.id, name);
 
         // 只更新允许的字段
         const updatedAward = {
             ...award,
             ...updateData,
-            id: award.id, // 确保 ID 不被覆盖
+            id, // 确保 ID 不被覆盖
             hackathon: award.hackathon // 确保 hackathon 关系不被覆盖
         };
-
         const saved = await this.store.save(updatedAward);
+
         await ActivityLogController.logUpdate(currentUser, 'Award', saved.id);
+
         return saved;
     }
 
-    @Delete('/:awardId')
+    @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
     async deleteOne(
         @CurrentUser() currentUser: User,
-        @Param('hackathonName') hackathonName: string,
-        @Param('awardId') awardId: number
+        @Param('name') name: string,
+        @Param('id') id: number
     ) {
-        const award = await this.store.findOneBy({
-            id: awardId,
-            hackathon: { name: hackathonName }
-        });
+        const award = await this.store.findOneBy({ id });
 
-        if (!award) throw new NotFoundError('Award not found');
+        if (!award) throw new NotFoundError(`Award ${id} is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, hackathonName);
+        await HackathonController.ensureAdmin(currentUser.id, name);
+
         await this.store.softDelete(award.id);
+
         await ActivityLogController.logDelete(currentUser, 'Award', award.id);
     }
 }

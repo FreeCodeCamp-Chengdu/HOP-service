@@ -324,7 +324,6 @@ describe('Main business logic', () => {
     // Award API tests
     it('should create an award for the hackathon', async () => {
         const awardData = {
-            id: 1,
             name: 'Best Innovation Award',
             description: 'Award for the most innovative project',
             quantity: 1,
@@ -337,17 +336,11 @@ describe('Main business logic', () => {
                 }
             ]
         };
-
         const { data: award } = await client.hackathon.awardControllerCreateOne(
             testHackathon.name,
             awardData,
-            {
-                headers: {
-                    Authorization: `Bearer ${hackathonCreator.token}`
-                }
-            }
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
         );
-
         testAward = award;
 
         expect(award).toMatchObject({
@@ -387,17 +380,12 @@ describe('Main business logic', () => {
             testHackathon.name,
             testAward.id,
             updateData,
-            {
-                headers: {
-                    Authorization: `Bearer ${hackathonCreator.token}`
-                }
-            }
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
         );
         expect(award).toMatchObject({
             ...updateData,
             updatedAt: expect.any(String)
         });
-        console.log('id info', award.id, testAward.id);
         expect(award.id).toBe(testAward.id);
     });
 
@@ -405,11 +393,7 @@ describe('Main business logic', () => {
         await client.hackathon.awardControllerDeleteOne(
             testHackathon.name,
             testAward.id,
-            {
-                headers: {
-                    Authorization: `Bearer ${hackathonCreator.token}`
-                }
-            }
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
         );
 
         try {
