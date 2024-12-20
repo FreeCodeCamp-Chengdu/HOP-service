@@ -16,16 +16,14 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 
 import {
+    Award,
+    AwardTarget,
     dataSource,
     Hackathon,
-    User,
-    Award,
     Media,
-    AwardTarget
-} from '../model';
-
-import { HackathonController } from './Hackathon';
+    User} from '../model';
 import { ActivityLogController } from './ActivityLog';
+import { HackathonController } from './Hackathon';
 
 @JsonController('/hackathon/:hackathonName/award')
 export class AwardController {
@@ -83,8 +81,15 @@ export class AwardController {
 
         await HackathonController.ensureAdmin(currentUser.id, hackathonName);
 
-        Object.assign(award, updateData);
-        const saved = await this.store.save(award);
+        // 只更新允许的字段
+        const updatedAward = {
+            ...award,
+            ...updateData,
+            id: award.id, // 确保 ID 不被覆盖
+            hackathon: award.hackathon // 确保 hackathon 关系不被覆盖
+        };
+
+        const saved = await this.store.save(updatedAward);
         await ActivityLogController.logUpdate(currentUser, 'Award', saved.id);
         return saved;
     }
