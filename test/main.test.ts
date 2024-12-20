@@ -397,6 +397,8 @@ describe('Main business logic', () => {
             ...updateData,
             updatedAt: expect.any(String)
         });
+        console.log('id info', award.id, testAward.id);
+        expect(award.id).toBe(testAward.id);
     });
 
     it('should delete an award', async () => {
