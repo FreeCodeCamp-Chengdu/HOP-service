@@ -7,12 +7,13 @@ import {
     Operation,
     StaffType
 } from '../source/model';
-import { Award,HttpResponse, User } from './client';
+import { Award, HttpResponse, User } from './client';
 import { client, GITHUB_PAT } from './shared';
 
 let platformAdmin: User,
     hackathonCreator: User,
     testHackathon: Hackathon,
+    teamLeader1: User,
     testAward: Award;
 
 describe('Main business logic', () => {
