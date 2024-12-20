@@ -1,4 +1,6 @@
+import 'core-js/full/array/from-async';
 import 'dotenv/config';
+
 import { HTTPClient } from 'koajax';
 
 import { Api } from './client';
