@@ -1,19 +1,16 @@
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Type } from 'class-transformer';
 import {
+    IsEnum,
     IsInt,
     IsOptional,
     IsString,
-    IsEnum,
-    IsObject,
-    ValidateNested,
-    Min
+    Min,
+    ValidateNested
 } from 'class-validator';
+import { Column, Entity } from 'typeorm';
 
-import { Base, Media } from './Base';
-import { Team } from './Team';
-import { User } from './User';
+import { Media } from './Base';
 import { HackathonBase } from './Hackathon';
-import { Type } from 'class-transformer';
 
 export enum AwardTarget {
     Team = 'team',
