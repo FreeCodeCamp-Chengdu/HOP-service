@@ -1,25 +1,27 @@
 import { Day, formatDate } from 'web-utility';
 
 import {
+    AwardTarget,
     Hackathon,
     HackathonStatus,
     Operation,
     StaffType
 } from '../source/model';
-import { HttpResponse, User } from './client';
+import { Award, HttpResponse, User } from './client';
 import { client, GITHUB_PAT } from './shared';
 
-var platformAdmin: User,
+let platformAdmin: User,
     hackathonCreator: User,
     testHackathon: Hackathon,
-    teamLeader1: User;
+    teamLeader1: User,
+    testAward: Award;
 
 describe('Main business logic', () => {
     it('should response 401 error with invalid token', async () => {
         try {
             await client.user.userControllerGetSession();
         } catch (error) {
-            expect((error as HttpResponse<any>).status).toBe(401);
+            expect((error as HttpResponse<unknown>).status).toBe(401);
         }
     });
 
@@ -319,6 +321,110 @@ describe('Main business logic', () => {
         expect(list1.count).toBe(list2.count);
     });
 
+    // Award API tests
+    it('should create an award for the hackathon', async () => {
+        const awardData = {
+            name: 'Best Innovation Award',
+            description: 'Award for the most innovative project',
+            quantity: 1,
+            target: AwardTarget.Team,
+            pictures: [
+                {
+                    name: 'award-image',
+                    description: 'Award trophy image',
+                    uri: 'https://example.com/award.png'
+                }
+            ]
+        };
+        const { data: award } = await client.hackathon.awardControllerCreateOne(
+            testHackathon.name,
+            awardData,
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
+        testAward = award;
+
+        expect(award).toMatchObject({
+            ...awardData,
+            id: expect.any(Number),
+            createdAt: expect.any(String),
+            updatedAt: expect.any(String),
+            hackathon: expect.any(Object)
+        });
+        expect(award.hackathon.id).toBe(testHackathon.id);
+    });
+
+    it('should get an award by id', async () => {
+        const { data: award } = await client.hackathon.awardControllerGetOne(
+            testHackathon.name,
+            testAward.id
+        );
+
+        expect(award).toMatchObject({
+            id: testAward.id,
+            name: testAward.name,
+            description: testAward.description,
+            quantity: testAward.quantity,
+            target: testAward.target,
+            pictures: testAward.pictures
+        });
+    });
+
+    it('should update an award', async () => {
+        const updateData = {
+            name: 'Updated Award Name',
+            description: 'Updated award description',
+            quantity: 2
+        };
+
+        const { data: award } = await client.hackathon.awardControllerUpdateOne(
+            testHackathon.name,
+            testAward.id,
+            updateData,
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
+        expect(award).toMatchObject({
+            ...updateData,
+            updatedAt: expect.any(String)
+        });
+        expect(award.id).toBe(testAward.id);
+    });
+
+    it('should delete an award', async () => {
+        await client.hackathon.awardControllerDeleteOne(
+            testHackathon.name,
+            testAward.id,
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
+
+        try {
+            await client.hackathon.awardControllerGetOne(
+                testHackathon.name,
+                testAward.id
+            );
+            fail('Should have thrown a 404 error');
+        } catch (error: unknown) {
+            expect((error as HttpResponse<unknown>).status).toBe(404);
+        }
+    });
+
+    it('should not allow unauthorized users to manage awards', async () => {
+        try {
+            await client.hackathon.awardControllerCreateOne(
+                testHackathon.name,
+                {
+                    name: 'Unauthorized Award',
+                    description: 'Test award description',
+                    quantity: 1,
+                    target: AwardTarget.Team,
+                    pictures: []
+                }
+            );
+            fail('Should have thrown a 401 error');
+        } catch (error: unknown) {
+            expect((error as HttpResponse<unknown>).status).toBe(401);
+        }
+    });
+
     it('should delete a hackathon by its admin', async () => {
         const { name } = testHackathon;
         const { status, data } =
@@ -331,7 +437,7 @@ describe('Main business logic', () => {
         try {
             await client.hackathon.hackathonControllerGetOne(name);
         } catch (error) {
-            expect((error as HttpResponse<any>).status).toBe(404);
+            expect((error as HttpResponse<unknown>).status).toBe(404);
         }
         const { data: hackathonList } =
             await client.hackathon.hackathonControllerGetList();

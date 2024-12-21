@@ -16,6 +16,7 @@ import { Enrollment } from './Enrollment';
 import { Team } from './Team';
 import { TeamMember } from './TeamMember';
 import { TeamWork } from './TeamWork';
+import { Award } from './Award';
 
 export * from './Base';
 export * from './User';
@@ -32,6 +33,7 @@ export * from './Enrollment';
 export * from './Team';
 export * from './TeamMember';
 export * from './TeamWork';
+export * from './Award';
 
 const { ssl, host, port, user, password, database } = isProduct
     ? parse(DATABASE_URL)
@@ -59,7 +61,8 @@ const commonOptions: Pick<
         Team,
         TeamMember,
         TeamWork,
-        Evaluation
+        Evaluation,
+        Award
     ],
     migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`]
 };
