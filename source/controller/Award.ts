@@ -69,12 +69,12 @@ export class AwardController {
 
         await HackathonController.ensureAdmin(currentUser.id, name);
 
-        // 只更新允许的字段
+        // update only allowed fields
         const updatedAward = {
             ...award,
             ...updateData,
-            id, // 确保 ID 不被覆盖
-            hackathon: award.hackathon // 确保 hackathon 关系不被覆盖
+            id, // make sure id is not overridden
+            hackathon: award.hackathon // make sure hackathon relationship is not changed
         };
         const saved = await this.store.save(updatedAward);
 
