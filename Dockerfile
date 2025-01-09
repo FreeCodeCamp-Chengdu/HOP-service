@@ -10,10 +10,10 @@ COPY . /app
 WORKDIR /app
 
 FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store  pnpm i -P --frozen-lockfile --ignore-scripts
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store  pnpm i -P --no-frozen-lockfile --ignore-scripts
 
 FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store  pnpm i --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store  pnpm i --no-frozen-lockfile
 RUN pnpm build
 
 FROM base
