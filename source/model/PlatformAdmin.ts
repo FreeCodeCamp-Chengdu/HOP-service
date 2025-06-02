@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
     IsInt,
     IsOptional,
@@ -14,6 +14,7 @@ import { User, UserBase } from './User';
 @Entity()
 export class PlatformAdmin extends UserBase {
     @Type(() => User)
+    @Transform(({ value }) => User.from(value))
     @ValidateNested()
     @IsOptional()
     @ManyToOne(() => User)

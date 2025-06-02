@@ -21,7 +21,6 @@ import {
     dataSource,
     Hackathon,
     HackathonFilter,
-    HackathonInput,
     HackathonListChunk,
     StaffType,
     User
@@ -60,7 +59,7 @@ export class HackathonController {
     async updateOne(
         @CurrentUser() updatedBy: User,
         @Param('name') name: string,
-        @Body() newData: HackathonInput
+        @Body() newData: Hackathon
     ) {
         const old = await store.findOne({
             where: { name },
@@ -124,7 +123,7 @@ export class HackathonController {
     @ResponseSchema(Hackathon)
     async createOne(
         @CurrentUser() createdBy: User,
-        @Body() hackathon: HackathonInput
+        @Body() hackathon: Hackathon
     ) {
         const saved = await store.save({ ...hackathon, createdBy });
 

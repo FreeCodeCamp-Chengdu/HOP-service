@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
     IsBoolean,
     IsInt,
@@ -30,13 +30,14 @@ export class Team extends HackathonBase {
     @Min(1)
     @VirtualColumn({
         query: alias =>
-            `SELECT COUNT(*) FROM "teammember" WHERE "teammember"."teamId" = ${alias}.id`
+            `SELECT COUNT(*) FROM "team_member" WHERE "team_member"."teamId" = ${alias}.id`
     })
     membersCount: number;
 }
 
 export abstract class TeamBase extends HackathonBase {
     @Type(() => Team)
+    @Transform(({ value }) => Team.from(value))
     @ValidateNested()
     @IsOptional()
     @ManyToOne(() => Team)

@@ -10,7 +10,6 @@ import {
     NotFoundError,
     OnUndefined,
     Param,
-    Patch,
     Put,
     QueryParams
 } from 'routing-controllers';
@@ -96,7 +95,7 @@ export class StaffController {
         });
     }
 
-    @Patch('/:uid')
+    @Put('/:uid')
     @Authorized()
     @ResponseSchema(Staff)
     async updateOne(

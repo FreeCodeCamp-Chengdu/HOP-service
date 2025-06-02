@@ -8,8 +8,8 @@ import {
     JsonController,
     NotFoundError,
     Param,
-    Patch,
     Post,
+    Put,
     QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
@@ -47,7 +47,7 @@ export class EnrollmentController {
         return store.findOneBy({ createdBy });
     }
 
-    @Patch('/:id')
+    @Put('/:id')
     @Authorized()
     @ResponseSchema(Enrollment)
     async updateOne(

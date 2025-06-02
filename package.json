@@ -1,6 +1,6 @@
 {
     "name": "@kaiyuanshe/openhackathon-service",
-    "version": "0.21.1",
+    "version": "0.22.0",
     "license": "LGPL-3.0",
     "author": "shiy2008@gmail.com",
     "description": "RESTful API service scaffold based on Node.js & TypeScript",
@@ -10,6 +10,8 @@
         "node": ">=22"
     },
     "dependencies": {
+        "@aws-sdk/client-s3": "^3.821.0",
+        "@aws-sdk/s3-request-presigner": "^3.821.0",
         "@koa/cors": "^5.0.0",
         "@koa/multer": "^4.0.0",
         "@koa/router": "^13.1.0",

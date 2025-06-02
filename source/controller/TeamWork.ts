@@ -10,8 +10,8 @@ import {
     OnNull,
     OnUndefined,
     Param,
-    Patch,
     Post,
+    Put,
     QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
@@ -58,13 +58,11 @@ export class TeamWorkController {
 
         await TeamController.ensureMember(createdBy.id, tid);
 
-        if (
+        const gitRepository =
             work.type === TeamWorkType.Website &&
             work.url.startsWith('https://github.com/')
-        )
-            var gitRepository = await GitTemplateController.getRepository(
-                work.url
-            );
+                ? await GitTemplateController.getRepository(work.url)
+                : undefined;
         const saved = await store.save({
             ...work,
             gitRepository,
@@ -77,7 +75,7 @@ export class TeamWorkController {
         return saved;
     }
 
-    @Patch('/:id')
+    @Put('/:id')
     @Authorized()
     @ResponseSchema(TeamWork)
     async updateOne(

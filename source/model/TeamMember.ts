@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
     IsEnum,
     IsInt,
@@ -35,6 +35,7 @@ export class TeamMember extends TeamBase {
     role?: TeamMemberRole = TeamMemberRole.Member;
 
     @Type(() => User)
+    @Transform(({ value }) => User.from(value))
     @ValidateNested()
     @IsOptional()
     @ManyToOne(() => User)
