@@ -1,5 +1,3 @@
-import 'core-js/full/array/from-async';
-
 import { githubClient, User as GitHubUser } from 'mobx-github';
 import { Body, HttpCode, JsonController, Post } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';

@@ -186,7 +186,7 @@ describe('Main business logic', () => {
             createdBy: expect.any(Object),
             updatedAt: expect.any(String)
         });
-
+        // @ts-expect-error Enum compatibility
         testHackathon = hackathon;
     });
 
@@ -226,6 +226,7 @@ describe('Main business logic', () => {
             isJudge: false,
             isEnrolled: false
         });
+        // @ts-expect-error Enum compatibility
         testHackathon = { ...testHackathon, ...data };
         delete testHackathon.roles;
     });
@@ -236,6 +237,7 @@ describe('Main business logic', () => {
 
         const { data } = await client.hackathon.hackathonControllerUpdateOne(
             testHackathon.name,
+            // @ts-expect-error Enum compatibility
             testHackathon,
             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
         );
@@ -243,6 +245,7 @@ describe('Main business logic', () => {
         expect(data.updatedAt).toStrictEqual(expect.any(String));
         expect(data.updatedBy.id).toBe(hackathonCreator.id);
 
+        // @ts-expect-error Enum compatibility
         testHackathon = { ...testHackathon, ...data };
         delete testHackathon.updatedBy;
         delete testHackathon.deletedAt;

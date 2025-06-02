@@ -12,7 +12,6 @@ import {
     OnNull,
     OnUndefined,
     Param,
-    Patch,
     Post,
     Put,
     QueryParams
@@ -131,7 +130,7 @@ export class TeamMemberController {
         });
     }
 
-    @Patch('/:uid')
+    @Put('/:uid')
     @Authorized()
     @ResponseSchema(TeamMember)
     async updateOne(

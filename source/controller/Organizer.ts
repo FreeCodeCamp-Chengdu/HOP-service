@@ -9,8 +9,8 @@ import {
     NotFoundError,
     OnUndefined,
     Param,
-    Patch,
     Post,
+    Put,
     QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
@@ -59,7 +59,7 @@ export class OrganizerController {
         return saved;
     }
 
-    @Patch('/:id')
+    @Put('/:id')
     @Authorized()
     @ResponseSchema(Organizer)
     async updateOne(

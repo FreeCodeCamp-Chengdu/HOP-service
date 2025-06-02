@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
     IsEnum,
     IsInt,
@@ -27,6 +27,7 @@ export class Staff extends HackathonBase {
     type: StaffType;
 
     @Type(() => User)
+    @Transform(({ value }) => User.from(value))
     @ValidateNested()
     @IsOptional()
     @ManyToOne(() => User)

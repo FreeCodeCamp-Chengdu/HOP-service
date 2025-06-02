@@ -78,7 +78,9 @@ export class SignUpData
 }
 
 export interface JWTAction {
-    context?: ParameterizedContext<JsonWebTokenError | { user: User }>;
+    context?: ParameterizedContext<
+        { error: JsonWebTokenError } | { user: User }
+    >;
 }
 
 @Entity()

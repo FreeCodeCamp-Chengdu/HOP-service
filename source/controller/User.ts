@@ -12,8 +12,8 @@ import {
     OnNull,
     OnUndefined,
     Param,
-    Patch,
     Post,
+    Put,
     QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
@@ -58,11 +58,8 @@ export class UserController {
         return user;
     }
 
-    static getSession({ context: { state } }: JWTAction) {
-        return state instanceof JsonWebTokenError
-            ? console.error(state)
-            : state.user;
-    }
+    static getSession = ({ context: { state } }: JWTAction) =>
+        'error' in state ? console.error(state.error) : state.user;
 
     @Get('/session')
     @Authorized()
@@ -91,7 +88,7 @@ export class UserController {
         return UserController.signUp(data);
     }
 
-    @Patch('/:id')
+    @Put('/:id')
     @Authorized()
     @ResponseSchema(User)
     async updateOne(
