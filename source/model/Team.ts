@@ -24,7 +24,8 @@ export class Team extends HackathonBase {
 
     @IsBoolean()
     @Column()
-    autoApprove: boolean;
+    @IsOptional()
+    autoApprove?: boolean = false;
 
     @IsInt()
     @Min(1)
@@ -32,7 +33,8 @@ export class Team extends HackathonBase {
         query: alias =>
             `SELECT COUNT(*) FROM "team_member" WHERE "team_member"."teamId" = ${alias}.id`
     })
-    membersCount: number;
+    @IsOptional()
+    membersCount?: number = 1;
 }
 
 export abstract class TeamBase extends HackathonBase {

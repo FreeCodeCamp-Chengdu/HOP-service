@@ -97,7 +97,6 @@ export class TeamController {
     @ResponseSchema(Team)
     async updateOne(
         @CurrentUser() updatedBy: User,
-        @Param('name') name: string,
         @Param('id') id: number,
         @Body() newData: Team
     ) {
@@ -138,7 +137,10 @@ export class TeamController {
     @OnNull(404)
     @ResponseSchema(Team)
     getOne(@Param('id') id: number) {
-        return store.findOneBy({ id });
+        return store.findOne({
+            where: { id },
+            relations: ['createdBy', 'hackathon']
+        });
     }
 
     @Get()
@@ -155,7 +157,8 @@ export class TeamController {
         const [list, count] = await store.findAndCount({
             where,
             skip: pageSize * (pageIndex - 1),
-            take: pageSize
+            take: pageSize,
+            relations: ['createdBy', 'hackathon']
         });
         return { list, count };
     }
