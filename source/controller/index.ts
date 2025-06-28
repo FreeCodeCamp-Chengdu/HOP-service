@@ -4,7 +4,11 @@ import { createAPI } from 'koagger';
 import { isProduct } from '../utility';
 import { ActivityLogController } from './ActivityLog';
 import { AnnouncementController } from './Announcement';
-import { AwardController } from './Award';
+import {
+    AwardAssignmentController,
+    AwardController,
+    TeamAwardAssignmentController
+} from './Award';
 import { BaseController } from './Base';
 import { EnrollmentController } from './Enrollment';
 import { EvaluationController } from './Evaluation';
@@ -56,6 +60,8 @@ export const controllers = [
     TeamWorkController,
     TeamMemberController,
     TeamController,
+    TeamAwardAssignmentController,
+    AwardAssignmentController,
     AwardController,
     HackathonController,
     BaseController

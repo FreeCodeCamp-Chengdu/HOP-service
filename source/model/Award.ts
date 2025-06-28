@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
     IsEnum,
     IsInt,
@@ -9,8 +9,10 @@ import {
 } from 'class-validator';
 import { Column, Entity } from 'typeorm';
 
-import { Media } from './Base';
+import { ListChunk, Media } from './Base';
 import { HackathonBase } from './Hackathon';
+import { Team } from './Team';
+import { User } from './User';
 
 export enum AwardTarget {
     Team = 'team',
@@ -44,4 +46,44 @@ export class Award extends HackathonBase {
     @IsOptional()
     @Column({ type: 'simple-json', nullable: true })
     pictures?: Media[];
+}
+
+export class AwardListChunk implements ListChunk<Award> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => Award)
+    @ValidateNested({ each: true })
+    list: Award[];
+}
+
+@Entity()
+export class AwardAssignment extends HackathonBase {
+    @Type(() => Award)
+    @Transform(({ value }) => Award.from(value))
+    @ValidateNested()
+    award: Award;
+
+    @Type(() => User)
+    @Transform(({ value }) => User.from(value))
+    @ValidateNested()
+    @IsOptional()
+    user?: User;
+
+    @Type(() => Team)
+    @Transform(({ value }) => Team.from(value))
+    @ValidateNested()
+    @IsOptional()
+    team?: Team;
+}
+
+export class AwardAssignmentListChunk implements ListChunk<AwardAssignment> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => AwardAssignment)
+    @ValidateNested({ each: true })
+    list: AwardAssignment[];
 }

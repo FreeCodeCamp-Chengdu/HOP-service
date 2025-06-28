@@ -1,6 +1,6 @@
 {
     "name": "@kaiyuanshe/openhackathon-service",
-    "version": "0.22.0",
+    "version": "1.0.0-rc.0",
     "homepage": "https://github.com/kaiyuanshe/OpenHackathon-service#readme",
     "repository": {
         "type": "git",
@@ -11,7 +11,7 @@
     },
     "types": "index.d.ts",
     "dependencies": {
-        "@types/jsonwebtoken": "^9.0.9",
+        "@types/jsonwebtoken": "^9.0.10",
         "@types/koa": "^2.15.0",
         "mobx-github": "^0.3.11",
         "mobx-restful": "^2.1.0"

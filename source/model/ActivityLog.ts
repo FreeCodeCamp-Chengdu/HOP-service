@@ -10,7 +10,7 @@ import {
 import { Column, Entity, ViewColumn, ViewEntity } from 'typeorm';
 
 import { Announcement } from './Announcement';
-import { Award } from './Award';
+import { Award, AwardAssignment } from './Award';
 import { Base, BaseFilter, InputData, ListChunk } from './Base';
 import { Enrollment } from './Enrollment';
 import { GitTemplate } from './GitTemplate';
@@ -37,6 +37,7 @@ export const LogableTable = {
     Staff,
     Organizer,
     Award,
+    AwardAssignment,
     Announcement,
     GitTemplate,
     Questionnaire,
