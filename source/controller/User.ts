@@ -59,7 +59,9 @@ export class UserController {
     }
 
     static getSession = ({ context: { state } }: JWTAction) =>
-        'error' in state ? console.error(state.error) : state.user;
+        'user' in state
+            ? state.user
+            : (console.error(state.jwtOriginalError), null);
 
     @Get('/session')
     @Authorized()

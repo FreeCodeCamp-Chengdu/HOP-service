@@ -5,7 +5,7 @@ import { SqliteConnectionOptions } from 'typeorm/driver/sqlite/SqliteConnectionO
 import { DATABASE_URL, isProduct } from '../utility';
 import { ActivityLog, UserRank } from './ActivityLog';
 import { Announcement } from './Announcement';
-import { Award } from './Award';
+import { Award, AwardAssignment } from './Award';
 import { Enrollment } from './Enrollment';
 import { GitTemplate } from './GitTemplate';
 import { Hackathon } from './Hackathon';
@@ -63,7 +63,8 @@ const commonOptions: Pick<
         TeamMember,
         TeamWork,
         Evaluation,
-        Award
+        Award,
+        AwardAssignment
     ],
     migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`]
 };

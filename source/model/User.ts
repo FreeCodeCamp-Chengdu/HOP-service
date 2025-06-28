@@ -79,7 +79,7 @@ export class SignUpData
 
 export interface JWTAction {
     context?: ParameterizedContext<
-        { error: JsonWebTokenError } | { user: User }
+        { jwtOriginalError: JsonWebTokenError } | { user: User }
     >;
 }
 
