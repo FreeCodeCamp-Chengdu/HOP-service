@@ -11,7 +11,8 @@ import {
     OnUndefined,
     Param,
     Post,
-    Put
+    Put,
+    QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
@@ -38,7 +39,7 @@ export class AwardController {
     @HttpCode(201)
     @ResponseSchema(Award)
     async createOne(
-        @CurrentUser() currentUser: User,
+        @CurrentUser() createdBy: User,
         @Param('name') name: string,
         @Body() award: Award
     ) {
@@ -47,11 +48,11 @@ export class AwardController {
         if (!hackathon)
             throw new NotFoundError(`Hackathon ${name} is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, name);
+        await HackathonController.ensureAdmin(createdBy.id, name);
 
-        const saved = await awardStore.save({ ...award, hackathon });
+        const saved = await awardStore.save({ ...award, createdBy, hackathon });
 
-        await ActivityLogController.logCreate(currentUser, 'Award', saved.id);
+        await ActivityLogController.logCreate(createdBy, 'Award', saved.id);
 
         return saved;
     }
@@ -67,7 +68,7 @@ export class AwardController {
     @Authorized()
     @ResponseSchema(Award)
     async updateOne(
-        @CurrentUser() currentUser: User,
+        @CurrentUser() updatedBy: User,
         @Param('name') name: string,
         @Param('id') id: number,
         @Body() updateData: Award
@@ -76,18 +77,19 @@ export class AwardController {
 
         if (!award) throw new NotFoundError(`Award ${id} is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, name);
+        await HackathonController.ensureAdmin(updatedBy.id, name);
 
         // update only allowed fields
         const updatedAward = {
             ...award,
             ...updateData,
             id, // make sure id is not overridden
+            updatedBy,
             hackathon: award.hackathon // make sure hackathon relationship is not changed
         };
         const saved = await awardStore.save(updatedAward);
 
-        await ActivityLogController.logUpdate(currentUser, 'Award', saved.id);
+        await ActivityLogController.logUpdate(updatedBy, 'Award', saved.id);
 
         return saved;
     }
@@ -96,7 +98,7 @@ export class AwardController {
     @Authorized()
     @OnUndefined(204)
     async deleteOne(
-        @CurrentUser() currentUser: User,
+        @CurrentUser() deletedBy: User,
         @Param('name') name: string,
         @Param('id') id: number
     ) {
@@ -104,18 +106,19 @@ export class AwardController {
 
         if (!award) throw new NotFoundError(`Award "${id}" is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, name);
+        await HackathonController.ensureAdmin(deletedBy.id, name);
 
+        await awardStore.save({ ...award, deletedBy });
         await awardStore.softDelete(award.id);
 
-        await ActivityLogController.logDelete(currentUser, 'Award', award.id);
+        await ActivityLogController.logDelete(deletedBy, 'Award', award.id);
     }
 
     @Get()
     @ResponseSchema(AwardListChunk)
     async getList(
         @Param('name') name: string,
-        { pageSize, pageIndex }: BaseFilter
+        @QueryParams() { pageSize, pageIndex }: BaseFilter
     ) {
         const [list, count] = await awardStore.findAndCount({
             where: { hackathon: { name } },
@@ -212,10 +215,13 @@ export class AwardAssignmentController {
 
     @Get()
     @ResponseSchema(AwardAssignmentListChunk)
-    getList(@Param('id') id: number, { pageSize, pageIndex }: BaseFilter) {
+    getList(
+        @Param('aid') aid: number,
+        @QueryParams() { pageSize, pageIndex }: BaseFilter
+    ) {
         return AwardAssignmentController.getList(
             'award',
-            id,
+            aid,
             pageSize,
             pageIndex
         );
@@ -226,7 +232,10 @@ export class AwardAssignmentController {
 export class TeamAwardAssignmentController {
     @Get()
     @ResponseSchema(AwardAssignmentListChunk)
-    getList(@Param('id') id: number, { pageSize, pageIndex }: BaseFilter) {
+    getList(
+        @Param('id') id: number,
+        @QueryParams() { pageSize, pageIndex }: BaseFilter
+    ) {
         return AwardAssignmentController.getList(
             'team',
             id,

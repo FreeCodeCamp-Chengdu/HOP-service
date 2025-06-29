@@ -7,7 +7,7 @@ import {
     Min,
     ValidateNested
 } from 'class-validator';
-import { Column, Entity } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne } from 'typeorm';
 
 import { ListChunk, Media } from './Base';
 import { HackathonBase } from './Hackathon';
@@ -63,18 +63,24 @@ export class AwardAssignment extends HackathonBase {
     @Type(() => Award)
     @Transform(({ value }) => Award.from(value))
     @ValidateNested()
+    @IsOptional()
+    @ManyToOne(() => Award)
     award: Award;
 
     @Type(() => User)
     @Transform(({ value }) => User.from(value))
     @ValidateNested()
     @IsOptional()
+    @OneToOne(() => User, { nullable: true })
+    @JoinColumn()
     user?: User;
 
     @Type(() => Team)
     @Transform(({ value }) => Team.from(value))
     @ValidateNested()
     @IsOptional()
+    @OneToOne(() => Team, { nullable: true })
+    @JoinColumn()
     team?: Team;
 }
 
