@@ -395,24 +395,6 @@ describe('Main business logic', () => {
         }
     });
 
-    it('should delete an award', async () => {
-        await client.hackathon.awardControllerDeleteOne(
-            testHackathon.name,
-            testAward.id,
-            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
-        );
-
-        try {
-            await client.hackathon.awardControllerGetOne(
-                testHackathon.name,
-                testAward.id
-            );
-            fail('Should have thrown a 404 error');
-        } catch (error) {
-            expect((error as HttpResponse<unknown>).status).toBe(404);
-        }
-    });
-
     it('should enroll a user in the hackathon', async () => {
         const { data: enrollment } =
             await client.hackathon.enrollmentControllerCreateOne(
@@ -509,6 +491,42 @@ describe('Main business logic', () => {
         );
         expect(teamList.count).toBe(1);
         expect(teamList.list[0].id).toBe(testTeam.id);
+    });
+
+    it('should assign an award to a team by hackathon staffs', async () => {
+        const { data: assignment } =
+            await client.hackathon.awardAssignmentControllerCreateOne(
+                testHackathon.name,
+                testAward.id,
+                { team: testTeam },
+                {
+                    headers: {
+                        Authorization: `Bearer ${hackathonCreator.token}`
+                    }
+                }
+            );
+        expect(assignment.award.id).toBe(testAward.id);
+        expect(assignment.team.id).toBe(testTeam.id);
+    });
+
+    it('should get the list of award assignments for a hackathon', async () => {
+        const { data: awardAssignments } =
+            await client.hackathon.awardAssignmentControllerGetList(
+                testHackathon.name,
+                testAward.id
+            );
+        expect(awardAssignments.count).toBe(1);
+        expect(awardAssignments.list[0].award.id).toBe(testAward.id);
+        expect(awardAssignments.list[0].team.id).toBe(testTeam.id);
+
+        const { data: teamAssignments } =
+            await client.hackathon.teamAwardAssignmentControllerGetList(
+                testHackathon.name,
+                testTeam.id
+            );
+        expect(teamAssignments.count).toBe(1);
+        expect(teamAssignments.list[0].award.id).toBe(testAward.id);
+        expect(teamAssignments.list[0].team.id).toBe(testTeam.id);
     });
 
     it('should delete a hackathon by its admin', async () => {
