@@ -1,8 +1,8 @@
-# Open Hackathon Platform - API service
+# Hackathon Open Platform - API service
 
 [REST][1]ful API service scaffold based on [Node.js][2] & [TypeScript][3], which is a reimplement of [OHP API service v4](https://github.com/kaiyuanshe/open-hackathon-api).
 
-[![Deploy to Production environment](https://github.com/kaiyuanshe/OpenHackathon-service/actions/workflows/deploy-production.yml/badge.svg)][4]
+[![Deploy to Production environment](https://github.com/FreeCodeCamp-Chengdu/HOP-service/actions/workflows/deploy-production.yml/badge.svg)][4]
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)][5]
 
@@ -45,7 +45,6 @@
 ## Best practice
 
 1.  Install GitHub apps in your organization or account:
-
     1.  [Probot settings][17]: set up Issue labels & Pull Request rules
     2.  [PR badge][18]: set up Online [VS Code][19] editor entries in Pull Request description
 
@@ -61,10 +60,10 @@
 
 ## API Usage
 
--   Entry: http://localhost:8080/
--   Document: http://localhost:8080/docs/
--   Schema: http://localhost:8080/docs/spec/
--   Type: https://github.com/kaiyuanshe/OpenHackathon-service/pkgs/npm/openhackathon-service
+- Entry: http://localhost:8080/
+- Document: http://localhost:8080/docs/
+- Schema: http://localhost:8080/docs/spec/
+- Type: https://github.com/FreeCodeCamp-Chengdu/HOP-service/pkgs/npm/hop-service
 
 ## Environment variables
 
@@ -138,10 +137,10 @@ git push origin master --tags
 [1]: https://en.wikipedia.org/wiki/Representational_state_transfer
 [2]: https://nodejs.org/
 [3]: https://www.typescriptlang.org/
-[4]: https://github.com/kaiyuanshe/OpenHackathon-service/actions/workflows/deploy-production.yml
+[4]: https://github.com/FreeCodeCamp-Chengdu/HOP-service/actions/workflows/deploy-production.yml
 [5]: https://render.com/deploy
-[6]: https://codespaces.new/kaiyuanshe/openhackathon-service
-[7]: https://gitpod.io/?autostart=true#https://github.com/kaiyuanshe/OpenHackathon-service
+[6]: https://codespaces.new/FreeCodeCamp-Chengdu/hop-service
+[7]: https://gitpod.io/?autostart=true#https://github.com/FreeCodeCamp-Chengdu/HOP-service
 [8]: https://koajs.com/
 [9]: https://github.com/typestack/routing-controllers
 [10]: https://github.com/typestack/class-transformer
@@ -150,11 +149,11 @@ git push origin master --tags
 [13]: https://swagger.io/
 [14]: https://github.com/anttiviljami/openapi-backend
 [15]: https://jestjs.io/
-[16]: https://github.com/kaiyuanshe/Next-SSR-middleware
+[16]: https://github.com/idea2app/Next-SSR-middleware
 [17]: https://github.com/apps/settings
 [18]: https://pullrequestbadge.com/
 [19]: https://code.visualstudio.com/
-[20]: https://github.com/new?template_name=openhackathon-service&template_owner=kaiyuanshe
-[21]: https://github.com/kaiyuanshe/kaiyuanshe.github.io/blob/bb4675a56bf1d6b207231313da5ed0af7cf0ebd6/.github/workflows/pull-request.yml#L32-L56
-[22]: https://github.com/kaiyuanshe/OpenHackathon-service/issues/new/choose
-[23]: https://github.com/kaiyuanshe/OpenHackathon-service/projects
+[20]: https://github.com/new?template_name=hop-service&template_owner=FreeCodeCamp-Chengdu
+[21]: https://github.com/idea2app/Lark-Next-Bootstrap-ts/blob/80967ed49045af9dbcf4d3695a2c39d53a6f71f1/.github/workflows/pull-request.yml#L9-L11
+[22]: https://github.com/FreeCodeCamp-Chengdu/HOP-service/issues/new/choose
+[23]: https://github.com/FreeCodeCamp-Chengdu/HOP-service/projects

@@ -10,7 +10,7 @@ import { Column, Entity } from 'typeorm';
 
 import { ListChunk } from './Base';
 import { HackathonBase } from './Hackathon';
-import { Answer } from './Questionnaire';
+import { Answer } from './Survey';
 import { UserBaseFilter, UserInputData } from './User';
 
 export enum EnrollmentStatus {

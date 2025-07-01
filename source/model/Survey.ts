@@ -71,7 +71,7 @@ export class Dimension {
     @IsInt()
     @Min(1)
     @IsOptional()
-    maximuScore?: number = 10;
+    maximumScore?: number = 10;
 }
 
 @Entity()

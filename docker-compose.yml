@@ -3,7 +3,7 @@ version: '3'
 volumes:
     database-data:
 networks:
-    kaiyuanshe:
+    freecodecamp-chengdu:
 
 services:
     postgres:
@@ -13,18 +13,18 @@ services:
         volumes:
             - database-data:/var/lib/postgresql/data/
         networks:
-            - kaiyuanshe
+            - freecodecamp-chengdu
         restart: always
-    openhackathon-service:
+    hop-service:
         depends_on:
             - postgres
-        image: kaiyuanshe/openhackathon-service
+        image: freecodecamp-chengdu/hop-service
         environment:
             - NODE_ENV=production
             - DATABASE_URL=postgres://postgres:${JWT_SECRET}@postgres:5432/postgres
             - PORT=8080
         networks:
-            - kaiyuanshe
+            - freecodecamp-chengdu
         healthcheck:
             test: ['CMD-SHELL', 'curl -f http://localhost:8080/ || exit 1']
             interval: 3s
@@ -40,12 +40,12 @@ services:
         restart: always
     caddy:
         depends_on:
-            - openhackathon-service
+            - hop-service
         image: caddy
         ports:
             - 80:80
             - 443:443
         networks:
-            - kaiyuanshe
+            - freecodecamp-chengdu
         restart: always
-        command: caddy reverse-proxy --from example.com --to openhackathon-service:8080
+        command: caddy reverse-proxy --from example.com --to hop-service:8080

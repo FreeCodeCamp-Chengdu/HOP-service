@@ -1,5 +1,5 @@
 {
-    "name": "@kaiyuanshe/openhackathon-service",
+    "name": "@freecodecamp-chengdu/hop-service",
     "version": "1.0.0-rc.0",
     "license": "LGPL-3.0",
     "author": "shiy2008@gmail.com",
@@ -88,7 +88,7 @@
     },
     "scripts": {
         "prepare": "husky || true",
-        "install": "get-git-folder https://github.com/kaiyuanshe/service-configuration main OpenHackathon-Web  ||  true",
+        "install": "get-git-folder https://github.com/freecodecamp-chengdu/service-configuration main HOP-Web  ||  true",
         "dev": "cross-env TS_NODE_TRANSPILE_ONLY=true  node -r ts-node/register --watch source/",
         "lint": "lint-staged",
         "build-test": "swagger-typescript-api generate -p http://localhost:8080/docs/spec -o test/ -n client.ts",
@@ -103,7 +103,7 @@
         "migration:run": "npm run typeorm -- migration:run",
         "upgrade:dev": "npm run migration:generate -- migration/version  &&  npm run migration:run",
         "upgrade:pro": "cross-env NODE_ENV=production  npm run migration:generate -- .data/version  &&  npm run migration:run",
-        "pack-image": "docker build -t kaiyuanshe/openhackathon-service:latest .",
-        "container": "docker rm -f openhackathon-service  &&  docker run --name openhackathon-service -p 8080:8080 -d kaiyuanshe/openhackathon-service:latest"
+        "pack-image": "docker build -t freecodecamp-chengdu/hop-service:latest .",
+        "container": "docker rm -f hop-service  &&  docker run --name hop-service -p 8080:8080 -d freecodecamp-chengdu/hop-service:latest"
     }
 }

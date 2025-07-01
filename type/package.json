@@ -1,13 +1,13 @@
 {
-    "name": "@kaiyuanshe/openhackathon-service",
+    "name": "@freecodecamp-chengdu/hop-service",
     "version": "1.0.0-rc.0",
-    "homepage": "https://github.com/kaiyuanshe/OpenHackathon-service#readme",
+    "homepage": "https://github.com/freecodecamp-chengdu/HOP-service#readme",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/kaiyuanshe/OpenHackathon-service.git"
+        "url": "git+https://github.com/freecodecamp-chengdu/HOP-service.git"
     },
     "bugs": {
-        "url": "https://github.com/kaiyuanshe/OpenHackathon-service/issues"
+        "url": "https://github.com/freecodecamp-chengdu/HOP-service/issues"
     },
     "types": "index.d.ts",
     "dependencies": {
