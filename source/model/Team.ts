@@ -3,6 +3,7 @@ import {
     IsBoolean,
     IsInt,
     IsOptional,
+    IsPositive,
     IsString,
     Min,
     ValidateNested
@@ -11,6 +12,7 @@ import { Column, Entity, ManyToOne, VirtualColumn } from 'typeorm';
 
 import { ListChunk } from './Base';
 import { HackathonBase } from './Hackathon';
+import { Score } from './Survey';
 
 @Entity()
 export class Team extends HackathonBase {
@@ -35,6 +37,17 @@ export class Team extends HackathonBase {
     })
     @IsOptional()
     membersCount?: number = 1;
+
+    @Type(() => Score)
+    @ValidateNested({ each: true })
+    @IsOptional()
+    @Column('simple-json', { default: [] })
+    scores?: Score[] = [];
+
+    @IsPositive()
+    @IsOptional()
+    @Column('float', { default: 0 })
+    score?: number = 0;
 }
 
 export abstract class TeamBase extends HackathonBase {

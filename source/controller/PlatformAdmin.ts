@@ -16,12 +16,11 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 
 import {
     BaseFilter,
+    dataSource,
     PlatformAdmin,
     PlatformAdminListChunk,
     Role,
-    User,
-    dataSource
-} from '../model';
+    User} from '../model';
 import { searchConditionOf } from '../utility';
 import { ActivityLogController } from './ActivityLog';
 
@@ -30,11 +29,7 @@ const store = dataSource.getRepository(PlatformAdmin),
 
 @JsonController('/platform/admin')
 export class PlatformAdminController {
-    static async isAdmin(uid: number) {
-        const admin = await store.findOneBy({ user: { id: uid } });
-
-        return !!admin;
-    }
+    static isAdmin = (uid: number) => store.existsBy({ user: { id: uid } });
 
     @Put('/:uid')
     @Authorized(Role.Administrator)
@@ -59,11 +54,8 @@ export class PlatformAdminController {
 
         const saved = await store.save({ user, description, createdBy });
 
-        await ActivityLogController.logCreate(
-            createdBy,
-            'PlatformAdmin',
-            saved.id
-        );
+        await ActivityLogController.logCreate(createdBy, 'PlatformAdmin', saved.id);
+
         return saved;
     }
 
@@ -85,18 +77,12 @@ export class PlatformAdminController {
 
         await store.update(admin.id, { deletedBy });
 
-        await ActivityLogController.logDelete(
-            deletedBy,
-            'PlatformAdmin',
-            admin.id
-        );
+        await ActivityLogController.logDelete(deletedBy, 'PlatformAdmin', admin.id);
     }
 
     @Get()
     @ResponseSchema(PlatformAdminListChunk)
-    async getList(
-        @QueryParams() { keywords, pageSize, pageIndex }: BaseFilter
-    ) {
+    async getList(@QueryParams() { keywords, pageSize, pageIndex }: BaseFilter) {
         const [list, count] = await store.findAndCount({
             where: searchConditionOf<PlatformAdmin>(['description'], keywords),
             relations: ['user', 'createdBy'],

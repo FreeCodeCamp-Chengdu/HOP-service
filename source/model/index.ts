@@ -40,32 +40,34 @@ const { ssl, host, port, user, password, database } = isProduct
     ? parse(DATABASE_URL)
     : ({} as ConnectionOptions);
 
+const entities = [
+    User,
+    PlatformAdmin,
+    ActivityLog,
+    UserRank,
+    Hackathon,
+    Staff,
+    Organizer,
+    Announcement,
+    GitTemplate,
+    Questionnaire,
+    Standard,
+    Enrollment,
+    Team,
+    TeamMember,
+    TeamWork,
+    Evaluation,
+    Award,
+    AwardAssignment
+];
+
 const commonOptions: Pick<
     SqliteConnectionOptions,
     'logging' | 'synchronize' | 'entities' | 'migrations'
 > = {
     logging: true,
     synchronize: true,
-    entities: [
-        User,
-        PlatformAdmin,
-        ActivityLog,
-        UserRank,
-        Hackathon,
-        Staff,
-        Organizer,
-        Announcement,
-        GitTemplate,
-        Questionnaire,
-        Standard,
-        Enrollment,
-        Team,
-        TeamMember,
-        TeamWork,
-        Evaluation,
-        Award,
-        AwardAssignment
-    ],
+    entities,
     migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`]
 };
 
@@ -81,7 +83,7 @@ export const dataSource = isProduct
           ...commonOptions
       })
     : new DataSource({
-          type: 'sqlite',
+          type: 'better-sqlite3',
           database: '.data/test.db',
           ...commonOptions
       });
