@@ -36,32 +36,25 @@ const StaffTypeRegExp = Object.values(StaffType).join('|');
 
 @JsonController(`/hackathon/:name/:type(${StaffTypeRegExp})`)
 export class StaffController {
-    static async isAdmin(userId: number, hackathonName: string) {
-        const staff = await store.findOneBy({
+    static isAdmin = (userId: number, hackathonName: string) =>
+        store.existsBy({
             hackathon: { name: hackathonName },
             user: { id: userId },
             type: StaffType.Admin
         });
-        return !!staff;
-    }
 
-    static async isJudge(userId: number, hackathonName: string) {
-        const staff = await store.findOneBy({
+    static isJudge = (userId: number, hackathonName: string) =>
+        store.existsBy({
             hackathon: { name: hackathonName },
             user: { id: userId },
             type: StaffType.Judge
         });
-        return !!staff;
-    }
 
     static async addOne(staff: Omit<Staff, keyof Base>) {
         const saved = await store.save(staff);
 
-        await ActivityLogController.logCreate(
-            staff.createdBy,
-            'Staff',
-            saved.id
-        );
+        await ActivityLogController.logCreate(staff.createdBy, 'Staff', saved.id);
+
         return saved;
     }
 

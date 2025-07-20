@@ -2,6 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
     IsBoolean,
     IsInt,
+    IsNumber,
     IsOptional,
     IsString,
     Min,
@@ -35,6 +36,18 @@ export class Team extends HackathonBase {
     })
     @IsOptional()
     membersCount?: number = 1;
+
+    @Type(() => Score)
+    @ValidateNested({ each: true })
+    @IsOptional()
+    @Column('simple-json', { nullable: true })
+    scores?: Score[] = [];
+
+    @IsNumber()
+    @Min(0)
+    @IsOptional()
+    @Column('float', { default: 0 })
+    score?: number = 0;
 }
 
 export abstract class TeamBase extends HackathonBase {
@@ -54,4 +67,17 @@ export class TeamListChunk implements ListChunk<Team> {
     @Type(() => Team)
     @ValidateNested({ each: true })
     list: Team[];
+}
+
+export class Score {
+    @IsString()
+    dimension: string;
+
+    @IsInt()
+    @Min(0)
+    score: number;
+
+    @IsString()
+    @IsOptional()
+    reason?: string;
 }

@@ -40,22 +40,15 @@ const store = dataSource.getRepository(TeamMember),
 
 @JsonController('/hackathon/:name/team/:id/member')
 export class TeamMemberController {
-    static async isAdmin(userId: number, teamId: number) {
-        const admin = await store.findOneBy({
+    static isAdmin = (userId: number, teamId: number) =>
+        store.existsBy({
             team: { id: teamId },
             user: { id: userId },
             role: TeamMemberRole.Admin
         });
-        return !!admin;
-    }
 
-    static async isMember(userId: number, teamId: number) {
-        const member = await store.findOneBy({
-            user: { id: userId },
-            team: { id: teamId }
-        });
-        return !!member;
-    }
+    static isMember = (userId: number, teamId: number) =>
+        store.existsBy({ user: { id: userId }, team: { id: teamId } });
 
     static async addOne(member: Omit<TeamMember, keyof Base>) {
         const saved = await store.save({
@@ -64,11 +57,8 @@ export class TeamMemberController {
                 : TeamMemberStatus.PendingApproval,
             ...member
         });
-        await ActivityLogController.logCreate(
-            member.createdBy,
-            'TeamMember',
-            saved.id
-        );
+        await ActivityLogController.logCreate(member.createdBy, 'TeamMember', saved.id);
+
         return saved;
     }
 
@@ -159,11 +149,8 @@ export class TeamMemberController {
             description,
             updatedBy
         });
-        await ActivityLogController.logUpdate(
-            updatedBy,
-            'TeamMember',
-            saved.id
-        );
+        await ActivityLogController.logUpdate(updatedBy, 'TeamMember', saved.id);
+
         return saved;
     }
 
@@ -188,11 +175,7 @@ export class TeamMemberController {
         await store.save({ ...member, deletedBy });
         await store.softDelete(member.id);
 
-        await ActivityLogController.logDelete(
-            deletedBy,
-            'TeamMember',
-            member.id
-        );
+        await ActivityLogController.logDelete(deletedBy, 'TeamMember', member.id);
     }
 
     @Delete()
@@ -208,11 +191,7 @@ export class TeamMemberController {
         await store.save({ ...member, deletedBy });
         await store.softDelete(member.id);
 
-        await ActivityLogController.logDelete(
-            deletedBy,
-            'TeamMember',
-            member.id
-        );
+        await ActivityLogController.logDelete(deletedBy, 'TeamMember', member.id);
     }
 
     @Get('/:uid')

@@ -1,10 +1,9 @@
 ReadMe.md
 node_modules/
 dist/
-.tmp/
+.*
+!.npmrc
+!.env*
 start.sh
-eslint.config.ts
-.husky/
-.github/
-.vscode/
+eslint.config.*
 *.pem

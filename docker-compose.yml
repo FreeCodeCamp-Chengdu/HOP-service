@@ -37,6 +37,8 @@ services:
         image: willfarrell/autoheal:1.2.0
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock
+        networks:
+            - freecodecamp-chengdu
         restart: always
     caddy:
         depends_on:

@@ -1,13 +1,13 @@
 {
     "name": "@freecodecamp-chengdu/hop-service",
     "version": "1.0.0-rc.0",
-    "homepage": "https://github.com/freecodecamp-chengdu/HOP-service#readme",
+    "homepage": "https://github.com/freeCodeCamp-Chengdu/HOP-service#readme",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/freecodecamp-chengdu/HOP-service.git"
+        "url": "git+https://github.com/freeCodeCamp-Chengdu/HOP-service.git"
     },
     "bugs": {
-        "url": "https://github.com/freecodecamp-chengdu/HOP-service/issues"
+        "url": "https://github.com/freeCodeCamp-Chengdu/HOP-service/issues"
     },
     "types": "index.d.ts",
     "dependencies": {

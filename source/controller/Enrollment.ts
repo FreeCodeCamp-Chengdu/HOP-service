@@ -32,13 +32,8 @@ const store = dataSource.getRepository(Enrollment),
 
 @JsonController('/hackathon/:name/enrollment')
 export class EnrollmentController {
-    static async isEnrolled(userId: number, hackathonName: string) {
-        const enrollment = await store.findOneBy({
-            hackathon: { name: hackathonName },
-            createdBy: { id: userId }
-        });
-        return !!enrollment;
-    }
+    static isEnrolled = (userId: number, hackathonName: string) =>
+        store.existsBy({ hackathon: { name: hackathonName }, createdBy: { id: userId } });
 
     @Get('/session')
     @Authorized()
@@ -98,11 +93,8 @@ export class EnrollmentController {
                 ? EnrollmentStatus.Approved
                 : EnrollmentStatus.PendingApproval
         });
-        await ActivityLogController.logCreate(
-            createdBy,
-            'Enrollment',
-            saved.id
-        );
+        await ActivityLogController.logCreate(createdBy, 'Enrollment', saved.id);
+
         return saved;
     }
 
@@ -110,14 +102,7 @@ export class EnrollmentController {
     @ResponseSchema(EnrollmentListChunk)
     async getList(
         @QueryParams()
-        {
-            keywords,
-            pageSize,
-            pageIndex,
-            status,
-            createdBy,
-            updatedBy
-        }: EnrollmentFilter
+        { keywords, pageSize, pageIndex, status, createdBy, updatedBy }: EnrollmentFilter
     ) {
         const where = searchConditionOf<Enrollment>(['form'], keywords, {
             status,

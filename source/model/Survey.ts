@@ -12,7 +12,7 @@ import { Column, Entity } from 'typeorm';
 
 import { ListChunk } from './Base';
 import { HackathonBase } from './Hackathon';
-import { TeamBase } from './Team';
+import { Score, TeamBase } from './Team';
 
 export enum QuestionType {
     Text = 'text',
@@ -80,19 +80,6 @@ export class Standard extends HackathonBase {
     @ValidateNested({ each: true })
     @Column('simple-json')
     dimensions: Dimension[];
-}
-
-export class Score {
-    @IsString()
-    dimension: string;
-
-    @IsInt()
-    @Min(0)
-    score: number;
-
-    @IsString()
-    @IsOptional()
-    reason?: string;
 }
 
 @Entity()

@@ -47,8 +47,7 @@ export class TeamController {
     }
 
     static async ensureMember(userId: number, teamId: number) {
-        if (!(await TeamMemberController.isMember(userId, teamId)))
-            throw new ForbiddenError();
+        if (!(await TeamMemberController.isMember(userId, teamId))) throw new ForbiddenError();
     }
 
     @Post()
@@ -73,8 +72,7 @@ export class TeamController {
             displayName: team.displayName
         });
 
-        if (same)
-            throw new ForbiddenError(`Team ${team.displayName} already exists`);
+        if (same) throw new ForbiddenError(`Team ${team.displayName} already exists`);
 
         const saved = await store.save({ ...team, hackathon, createdBy });
 
@@ -149,13 +147,12 @@ export class TeamController {
         @Param('name') name: string,
         @QueryParams() { keywords, pageSize, pageIndex }: BaseFilter
     ) {
-        const where = searchConditionOf<Team>(
-            ['displayName', 'description'],
-            keywords,
-            { hackathon: { name } }
-        );
+        const where = searchConditionOf<Team>(['displayName', 'description'], keywords, {
+            hackathon: { name }
+        });
         const [list, count] = await store.findAndCount({
             where,
+            order: { score: 'DESC', updatedAt: 'DESC' },
             skip: pageSize * (pageIndex - 1),
             take: pageSize,
             relations: ['createdBy', 'hackathon']

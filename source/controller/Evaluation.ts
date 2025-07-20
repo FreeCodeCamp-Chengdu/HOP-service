@@ -12,18 +12,19 @@ import {
     QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
+import { groupBy, sum } from 'web-utility';
 
 import {
     BaseFilter,
     dataSource,
     Evaluation,
     EvaluationListChunk,
+    Score,
     Team,
     User
 } from '../model';
 import { searchConditionOf } from '../utility';
 import { ActivityLogController } from './ActivityLog';
-import { HackathonController } from './Hackathon';
 
 const store = dataSource.getRepository(Evaluation),
     teamStore = dataSource.getRepository(Team);
@@ -48,13 +49,8 @@ export class EvaluationController {
 
         const { hackathon } = team,
             now = Date.now();
-        if (
-            now < +new Date(hackathon.judgeStartedAt) ||
-            now > +new Date(hackathon.judgeEndedAt)
-        )
+        if (now < +new Date(hackathon.judgeStartedAt) || now > +new Date(hackathon.judgeEndedAt))
             throw new ForbiddenError('Not in evaluation period');
-
-        await HackathonController.ensureJudge(createdBy.id, name);
 
         const saved = await store.save({
             ...evaluation,
@@ -62,11 +58,23 @@ export class EvaluationController {
             hackathon: team.hackathon,
             createdBy
         });
-        await ActivityLogController.logCreate(
-            createdBy,
-            'Evaluation',
-            saved.id
+        await ActivityLogController.logCreate(createdBy, 'Evaluation', saved.id);
+
+        const allScores = (await store.findBy({ team: { id: tid } }))
+            .map(({ scores }) => scores)
+            .flat();
+        const dimensionGroup = groupBy(allScores, 'dimension');
+
+        const scores = Object.values(dimensionGroup).map(
+            (scores): Score => ({
+                dimension: scores[0].dimension,
+                score: sum(...scores.map(({ score }) => score)) / scores.length
+            })
         );
+        const score = sum(...scores.map(({ score }) => score));
+
+        await teamStore.save({ ...team, scores, score });
+
         return saved;
     }
 
@@ -76,11 +84,9 @@ export class EvaluationController {
         @Param('tid') tid: number,
         @QueryParams() { keywords, pageSize, pageIndex }: BaseFilter
     ) {
-        const where = searchConditionOf<Evaluation>(
-            ['scores', 'comment'],
-            keywords,
-            { team: { id: tid } }
-        );
+        const where = searchConditionOf<Evaluation>(['scores', 'comment'], keywords, {
+            team: { id: tid }
+        });
         const [list, count] = await store.findAndCount({
             where,
             skip: pageSize * (pageIndex - 1),
