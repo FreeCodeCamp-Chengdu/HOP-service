@@ -1,6 +1,6 @@
 import { Day, formatDate } from 'web-utility';
 
-import { Award, Hackathon, HttpResponse, Team, User } from './client';
+import { Award, Hackathon, HttpResponse, Score, Standard, Team, User } from './client';
 import { client, GITHUB_PAT } from './shared';
 
 const baseData = {
@@ -27,12 +27,9 @@ describe('Main business logic', () => {
     });
 
     it('should create the first Administator only by the first User', async () => {
-        const platformAdminAccount = {
-            email: 'admin@test.com',
-            password: 'admin'
-        };
-        const { data: user1 } =
-            await client.user.userControllerSignUp(platformAdminAccount);
+        const platformAdminAccount = { email: 'admin@test.com', password: 'admin' };
+
+        const { data: user1 } = await client.user.userControllerSignUp(platformAdminAccount);
 
         expect(user1.email).toBe(platformAdminAccount.email);
         expect(user1.roles).toEqual([0]);
@@ -44,9 +41,8 @@ describe('Main business logic', () => {
             email: 'hackathon-creator@test.com',
             password: 'hackathon-creator'
         };
-        const { data: user2 } = await client.user.userControllerSignUp(
-            hackathonCreatorAccount
-        );
+        const { data: user2 } = await client.user.userControllerSignUp(hackathonCreatorAccount);
+
         expect(user2.email).toBe(hackathonCreatorAccount.email);
         expect(user2.roles).toEqual([2]);
         expect(user2.password).toBeUndefined();
@@ -76,9 +72,8 @@ describe('Main business logic', () => {
     });
 
     it("should get a User's profile by its ID", async () => {
-        const { data: user } = await client.user.userControllerGetOne(
-            hackathonCreator.id
-        );
+        const { data: user } = await client.user.userControllerGetOne(hackathonCreator.id);
+
         const { password, token, deletedAt, ...profile } = hackathonCreator;
 
         expect(user).toMatchObject(profile);
@@ -107,8 +102,7 @@ describe('Main business logic', () => {
                 recordId: UID,
                 record: expect.any(Object)
             },
-            { data } =
-                await client.activityLog.activityLogControllerGetUserList(UID);
+            { data } = await client.activityLog.activityLogControllerGetUserList(UID);
 
         expect(data).toMatchObject({
             count: 2,
@@ -157,23 +151,18 @@ describe('Main business logic', () => {
                     }
                 ]
             };
-        const { data: hackathon } =
-            await client.hackathon.hackathonControllerCreateOne(
-                {
-                    ...hackathonMeta,
-                    eventStartedAt,
-                    eventEndedAt,
-                    enrollmentStartedAt: eventStartedAt,
-                    enrollmentEndedAt: eventEndedAt,
-                    judgeStartedAt: eventStartedAt,
-                    judgeEndedAt: eventEndedAt
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${hackathonCreator.token}`
-                    }
-                }
-            );
+        const { data: hackathon } = await client.hackathon.hackathonControllerCreateOne(
+            {
+                ...hackathonMeta,
+                eventStartedAt,
+                eventEndedAt,
+                enrollmentStartedAt: eventStartedAt,
+                enrollmentEndedAt: eventEndedAt,
+                judgeStartedAt: eventStartedAt,
+                judgeEndedAt: eventEndedAt
+            },
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
         expect(hackathon).toMatchObject({
             ...baseData,
             ...hackathonMeta,
@@ -185,11 +174,10 @@ describe('Main business logic', () => {
     });
 
     it('should auto set the creator as an admin of this hackathon', async () => {
-        const { data: staffList } =
-            await client.hackathon.staffControllerGetList(
-                testHackathon.name,
-                'admin'
-            );
+        const { data: staffList } = await client.hackathon.staffControllerGetList(
+            testHackathon.name,
+            'admin'
+        );
         expect(staffList).toMatchObject({
             count: 1,
             list: [
@@ -207,10 +195,9 @@ describe('Main business logic', () => {
     });
 
     it('should get the detail by a hackathon name', async () => {
-        const { data } = await client.hackathon.hackathonControllerGetOne(
-            testHackathon.name,
-            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
-        );
+        const { data } = await client.hackathon.hackathonControllerGetOne(testHackathon.name, {
+            headers: { Authorization: `Bearer ${hackathonCreator.token}` }
+        });
         expect(data.id).toBe(testHackathon.id);
         expect(data.enrollment).toBe(0);
         expect(data.roles).toEqual({
@@ -241,29 +228,25 @@ describe('Main business logic', () => {
     });
 
     it('should get the list of hackathons', async () => {
-        const { data: list1 } =
-            await client.hackathon.hackathonControllerGetList();
+        const { data: list1 } = await client.hackathon.hackathonControllerGetList();
 
         expect(list1).toEqual({ count: 1, list: [testHackathon] });
 
-        const { data: list2 } =
-            await client.hackathon.hackathonControllerGetList({
-                createdBy: hackathonCreator.id
-            });
+        const { data: list2 } = await client.hackathon.hackathonControllerGetList({
+            createdBy: hackathonCreator.id
+        });
         expect(list2).toEqual({ count: 1, list: [testHackathon] });
     });
 
     it('should search hackathons by keywords', async () => {
-        const { data: list } =
-            await client.hackathon.hackathonControllerGetList({
-                keywords: 'example'
-            });
+        const { data: list } = await client.hackathon.hackathonControllerGetList({
+            keywords: 'example'
+        });
         expect(list).toEqual({ count: 1, list: [testHackathon] });
 
-        const { data: empty } =
-            await client.hackathon.hackathonControllerGetList({
-                keywords: 'none'
-            });
+        const { data: empty } = await client.hackathon.hackathonControllerGetList({
+            keywords: 'none'
+        });
         expect(empty).toEqual({ count: 0, list: [] });
     });
 
@@ -275,10 +258,9 @@ describe('Main business logic', () => {
     });
 
     it('should sign up & in a new User with a GitHub token', async () => {
-        const { status, data: session } =
-            await client.user.oauthControllerSignInWithGithub({
-                accessToken: GITHUB_PAT
-            });
+        const { status, data: session } = await client.user.oauthControllerSignInWithGithub({
+            accessToken: GITHUB_PAT
+        });
         expect(status).toBe(201);
 
         expect(session).toMatchObject({
@@ -379,37 +361,64 @@ describe('Main business logic', () => {
 
     it('should not allow unauthorized users to manage awards', async () => {
         try {
-            await client.hackathon.awardControllerCreateOne(
-                testHackathon.name,
-                {
-                    name: 'Unauthorized Award',
-                    description: 'Test award description',
-                    quantity: 1,
-                    target: 'team' as const,
-                    pictures: []
-                }
-            );
+            await client.hackathon.awardControllerCreateOne(testHackathon.name, {
+                name: 'Unauthorized Award',
+                description: 'Test award description',
+                quantity: 1,
+                target: 'team' as const,
+                pictures: []
+            });
             fail('Should have thrown a 401 error');
         } catch (error) {
             expect((error as HttpResponse<unknown>).status).toBe(401);
         }
     });
 
+    it('should add Standard dimensions to a hackathon', async () => {
+        const standard: Standard = {
+            dimensions: [
+                {
+                    name: 'Technical Difficulty',
+                    description: 'The technical difficulty of the project',
+                    maximumScore: 5
+                },
+                {
+                    name: 'Creativity',
+                    description: 'The creativity of the project',
+                    maximumScore: 5
+                },
+                {
+                    name: 'Code Quality',
+                    description: 'The quality of the code',
+                    maximumScore: 5
+                }
+            ]
+        };
+        const { data } = await client.hackathon.surveyControllerUpdateStandard(
+            testHackathon.name,
+            standard,
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
+        expect(data).toMatchObject({
+            ...baseData,
+            hackathon: expect.any(Object),
+            ...standard
+        });
+    });
+
     it('should enroll a user in the hackathon', async () => {
-        const { data: enrollment } =
-            await client.hackathon.enrollmentControllerCreateOne(
-                testHackathon.name,
-                { form: [] },
-                { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
-            );
+        const { data: enrollment } = await client.hackathon.enrollmentControllerCreateOne(
+            testHackathon.name,
+            { form: [] },
+            { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
+        );
         expect(enrollment).toMatchObject({
             ...baseData,
             hackathon: expect.any(Object)
         });
-        const { data: hackathon } =
-            await client.hackathon.hackathonControllerGetOne(
-                testHackathon.name
-            );
+        const { data: hackathon } = await client.hackathon.hackathonControllerGetOne(
+            testHackathon.name
+        );
         expect(hackathon.enrollment).toBe(1);
     });
 
@@ -421,11 +430,7 @@ describe('Main business logic', () => {
         const { data: team } = await client.hackathon.teamControllerCreateOne(
             testHackathon.name,
             newTeam,
-            {
-                headers: {
-                    Authorization: `Bearer ${teamLeader1.token}`
-                }
-            }
+            { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
         );
         expect(team).toMatchObject({ ...baseData, ...newTeam });
 
@@ -469,15 +474,8 @@ describe('Main business logic', () => {
             await client.hackathon.teamControllerUpdateOne(
                 testHackathon.name,
                 testTeam.id,
-                {
-                    displayName: 'Unauthorized Update',
-                    description: 'This should not be allowed'
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${hackathonCreator.token}`
-                    }
-                }
+                { displayName: 'Unauthorized Update', description: 'This should not be allowed' },
+                { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
             );
             fail('it should have thrown a 403 error');
         } catch (error) {
@@ -486,35 +484,87 @@ describe('Main business logic', () => {
     });
 
     it('should get the list of teams in the hackathon', async () => {
-        const { data: teamList } = await client.hackathon.teamControllerGetList(
-            testHackathon.name
-        );
+        const { data: teamList } = await client.hackathon.teamControllerGetList(testHackathon.name);
+
         expect(teamList.count).toBe(1);
         expect(teamList.list[0].id).toBe(testTeam.id);
     });
 
+    it('should allow anyone to evaluate the team', async () => {
+        const scores1: Score[] = [
+            { dimension: 'Technical Difficulty', score: 4 },
+            { dimension: 'Creativity', score: 5 },
+            { dimension: 'Code Quality', score: 4 }
+        ];
+        const { data: data1 } = await client.hackathon.evaluationControllerCreateOne(
+            testHackathon.name,
+            testTeam.id,
+            { scores: scores1 },
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
+        expect(data1).toMatchObject({
+            ...baseData,
+            hackathon: expect.any(Object),
+            team: expect.any(Object),
+            scores: scores1
+        });
+
+        const scores2: Score[] = [
+            { dimension: 'Technical Difficulty', score: 5 },
+            { dimension: 'Creativity', score: 4 },
+            { dimension: 'Code Quality', score: 5 }
+        ];
+        const { data: data2 } = await client.hackathon.evaluationControllerCreateOne(
+            testHackathon.name,
+            testTeam.id,
+            { scores: scores2 },
+            { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
+        );
+        expect(data2).toMatchObject({
+            ...baseData,
+            hackathon: expect.any(Object),
+            team: expect.any(Object),
+            scores: scores2
+        });
+    });
+
+    it('should get the evaluations & final score of a team', async () => {
+        const { data: evaluations } = await client.hackathon.evaluationControllerGetList(
+            testHackathon.name,
+            testTeam.id
+        );
+        expect(evaluations.count).toBe(2);
+        expect(evaluations.list[0].scores).toHaveLength(3);
+        expect(evaluations.list[1].scores).toHaveLength(3);
+
+        const { data: team } = await client.hackathon.teamControllerGetOne(
+            testHackathon.name,
+            testTeam.id
+        );
+        expect(team.scores).toEqual([
+            { dimension: 'Technical Difficulty', score: 4.5 },
+            { dimension: 'Creativity', score: 4.5 },
+            { dimension: 'Code Quality', score: 4.5 }
+        ]);
+        expect(team.score).toBe(13.5);
+    });
+
     it('should assign an award to a team by hackathon staffs', async () => {
-        const { data: assignment } =
-            await client.hackathon.awardAssignmentControllerCreateOne(
-                testHackathon.name,
-                testAward.id,
-                { team: testTeam },
-                {
-                    headers: {
-                        Authorization: `Bearer ${hackathonCreator.token}`
-                    }
-                }
-            );
+        const { data: assignment } = await client.hackathon.awardAssignmentControllerCreateOne(
+            testHackathon.name,
+            testAward.id,
+            { team: testTeam },
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
         expect(assignment.award.id).toBe(testAward.id);
         expect(assignment.team.id).toBe(testTeam.id);
     });
 
     it('should get the list of award assignments for a hackathon', async () => {
-        const { data: awardAssignments } =
-            await client.hackathon.awardAssignmentControllerGetList(
-                testHackathon.name,
-                testAward.id
-            );
+        const { data: awardAssignments } = await client.hackathon.awardAssignmentControllerGetList(
+            testHackathon.name,
+            testAward.id
+        );
         expect(awardAssignments.count).toBe(1);
         expect(awardAssignments.list[0].award.id).toBe(testAward.id);
         expect(awardAssignments.list[0].team.id).toBe(testTeam.id);
@@ -531,10 +581,9 @@ describe('Main business logic', () => {
 
     it('should delete a hackathon by its admin', async () => {
         const { name } = testHackathon;
-        const { status, data } =
-            await client.hackathon.hackathonControllerDeleteOne(name, {
-                headers: { Authorization: `Bearer ${hackathonCreator.token}` }
-            });
+        const { status, data } = await client.hackathon.hackathonControllerDeleteOne(name, {
+            headers: { Authorization: `Bearer ${hackathonCreator.token}` }
+        });
         expect(status).toBe(204);
         expect(data).toBeNull();
 
@@ -545,8 +594,7 @@ describe('Main business logic', () => {
         } catch (error) {
             expect((error as HttpResponse<unknown>).status).toBe(404);
         }
-        const { data: hackathonList } =
-            await client.hackathon.hackathonControllerGetList();
+        const { data: hackathonList } = await client.hackathon.hackathonControllerGetList();
 
         expect(hackathonList).toEqual({ count: 0, list: [] });
     });

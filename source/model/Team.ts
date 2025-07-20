@@ -2,8 +2,8 @@ import { Transform, Type } from 'class-transformer';
 import {
     IsBoolean,
     IsInt,
+    IsNumber,
     IsOptional,
-    IsPositive,
     IsString,
     Min,
     ValidateNested
@@ -12,7 +12,6 @@ import { Column, Entity, ManyToOne, VirtualColumn } from 'typeorm';
 
 import { ListChunk } from './Base';
 import { HackathonBase } from './Hackathon';
-import { Score } from './Survey';
 
 @Entity()
 export class Team extends HackathonBase {
@@ -41,10 +40,11 @@ export class Team extends HackathonBase {
     @Type(() => Score)
     @ValidateNested({ each: true })
     @IsOptional()
-    @Column('simple-json', { default: [] })
+    @Column('simple-json', { nullable: true })
     scores?: Score[] = [];
 
-    @IsPositive()
+    @IsNumber()
+    @Min(0)
     @IsOptional()
     @Column('float', { default: 0 })
     score?: number = 0;
@@ -67,4 +67,17 @@ export class TeamListChunk implements ListChunk<Team> {
     @Type(() => Team)
     @ValidateNested({ each: true })
     list: Team[];
+}
+
+export class Score {
+    @IsString()
+    dimension: string;
+
+    @IsInt()
+    @Min(0)
+    score: number;
+
+    @IsString()
+    @IsOptional()
+    reason?: string;
 }

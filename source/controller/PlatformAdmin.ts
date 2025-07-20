@@ -20,7 +20,8 @@ import {
     PlatformAdmin,
     PlatformAdminListChunk,
     Role,
-    User} from '../model';
+    User
+} from '../model';
 import { searchConditionOf } from '../utility';
 import { ActivityLogController } from './ActivityLog';
 

@@ -25,7 +25,6 @@ import {
 } from '../model';
 import { searchConditionOf } from '../utility';
 import { ActivityLogController } from './ActivityLog';
-import { HackathonController } from './Hackathon';
 
 const store = dataSource.getRepository(Evaluation),
     teamStore = dataSource.getRepository(Team);
@@ -53,8 +52,6 @@ export class EvaluationController {
         if (now < +new Date(hackathon.judgeStartedAt) || now > +new Date(hackathon.judgeEndedAt))
             throw new ForbiddenError('Not in evaluation period');
 
-        await HackathonController.ensureJudge(createdBy.id, name);
-
         const saved = await store.save({
             ...evaluation,
             team,
@@ -62,9 +59,13 @@ export class EvaluationController {
             createdBy
         });
         await ActivityLogController.logCreate(createdBy, 'Evaluation', saved.id);
-        const dimensions = groupBy(evaluation.scores, 'dimension');
 
-        const scores = Object.values(dimensions).map(
+        const allScores = (await store.findBy({ team: { id: tid } }))
+            .map(({ scores }) => scores)
+            .flat();
+        const dimensionGroup = groupBy(allScores, 'dimension');
+
+        const scores = Object.values(dimensionGroup).map(
             (scores): Score => ({
                 dimension: scores[0].dimension,
                 score: sum(...scores.map(({ score }) => score)) / scores.length
