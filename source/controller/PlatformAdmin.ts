@@ -14,23 +14,18 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    BaseFilter,
-    dataSource,
-    PlatformAdmin,
-    PlatformAdminListChunk,
-    Role,
-    User
-} from '../model';
-import { activityLogService } from '../service';
+import { BaseFilter, dataSource, PlatformAdmin, PlatformAdminListChunk, Role, User } from '../model';
+import { UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
 
-const store = dataSource.getRepository(PlatformAdmin),
-    userStore = dataSource.getRepository(User);
+const userStore = dataSource.getRepository(User);
+const platformAdminService = new UserServiceWithLog(PlatformAdmin, ['description']);
 
 @JsonController('/platform/admin')
 export class PlatformAdminController {
-    static isAdmin = (uid: number) => store.existsBy({ user: { id: uid } });
+    service = platformAdminService;
+
+    static isAdmin = (uid: number) => platformAdminService.store.existsBy({ user: { id: uid } });
 
     @Put('/:uid')
     @Authorized(Role.Administrator)
@@ -45,7 +40,7 @@ export class PlatformAdminController {
 
         if (!user) throw new NotFoundError();
 
-        const admin = await store.findOneBy({ user: { id: uid } });
+        const admin = await this.service.store.findOneBy({ user: { id: uid } });
 
         if (admin) return admin;
 
@@ -53,11 +48,7 @@ export class PlatformAdminController {
 
         await userStore.save(user);
 
-        const saved = await store.save({ user, description, createdBy });
-
-        await activityLogService.logCreate(createdBy, 'PlatformAdmin', saved.id);
-
-        return saved;
+        return this.service.createOne({ user, description }, createdBy);
     }
 
     @Delete('/:uid')
@@ -68,7 +59,7 @@ export class PlatformAdminController {
 
         if (!user) throw new NotFoundError();
 
-        const admin = await store.findOneBy({ user: { id: uid } });
+        const admin = await this.service.store.findOneBy({ user: { id: uid } });
 
         if (!admin) return;
 
@@ -76,20 +67,13 @@ export class PlatformAdminController {
 
         await userStore.save(user);
 
-        await store.update(admin.id, { deletedBy });
-
-        await activityLogService.logDelete(deletedBy, 'PlatformAdmin', admin.id);
+        await this.service.deleteOne(admin.id, deletedBy);
     }
 
     @Get()
     @ResponseSchema(PlatformAdminListChunk)
-    async getList(@QueryParams() { keywords, pageSize, pageIndex }: BaseFilter) {
-        const [list, count] = await store.findAndCount({
-            where: searchConditionOf<PlatformAdmin>(['description'], keywords),
-            relations: ['user', 'createdBy'],
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
-        });
-        return { list, count };
+    getList(@QueryParams() { keywords, ...filter }: BaseFilter) {
+        const where = searchConditionOf<PlatformAdmin>(['description'], keywords);
+        return this.service.getList({ keywords, ...filter }, where, { relations: ['user', 'createdBy'] });
     }
 }

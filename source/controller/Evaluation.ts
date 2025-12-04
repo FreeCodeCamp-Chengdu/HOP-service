@@ -14,23 +14,16 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { groupBy, sum } from 'web-utility';
 
-import {
-    BaseFilter,
-    dataSource,
-    Evaluation,
-    EvaluationListChunk,
-    Score,
-    Team,
-    User
-} from '../model';
-import { activityLogService } from '../service';
+import { BaseFilter, dataSource, Evaluation, EvaluationListChunk, Score, Team, User } from '../model';
+import { UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
 
-const store = dataSource.getRepository(Evaluation),
-    teamStore = dataSource.getRepository(Team);
+const teamStore = dataSource.getRepository(Team);
 
 @JsonController('/hackathon/:name/team/:tid/evaluation')
 export class EvaluationController {
+    service = new UserServiceWithLog(Evaluation, ['scores', 'comment']);
+
     @Post()
     @Authorized()
     @HttpCode(201)
@@ -52,15 +45,9 @@ export class EvaluationController {
         if (now < +new Date(hackathon.judgeStartedAt) || now > +new Date(hackathon.judgeEndedAt))
             throw new ForbiddenError('Not in evaluation period');
 
-        const saved = await store.save({
-            ...evaluation,
-            team,
-            hackathon: team.hackathon,
-            createdBy
-        });
-        await activityLogService.logCreate(createdBy, 'Evaluation', saved.id);
+        const saved = await this.service.createOne({ ...evaluation, team, hackathon: team.hackathon }, createdBy);
 
-        const allScores = (await store.findBy({ team: { id: tid } }))
+        const allScores = (await this.service.store.findBy({ team: { id: tid } }))
             .map(({ scores }) => scores)
             .flat();
         const dimensionGroup = groupBy(allScores, 'dimension');
@@ -80,18 +67,10 @@ export class EvaluationController {
 
     @Get()
     @ResponseSchema(EvaluationListChunk)
-    async getList(
-        @Param('tid') tid: number,
-        @QueryParams() { keywords, pageSize, pageIndex }: BaseFilter
-    ) {
+    getList(@Param('tid') tid: number, @QueryParams() { keywords, ...filter }: BaseFilter) {
         const where = searchConditionOf<Evaluation>(['scores', 'comment'], keywords, {
             team: { id: tid }
         });
-        const [list, count] = await store.findAndCount({
-            where,
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
-        });
-        return { list, count };
+        return this.service.getList({ keywords, ...filter }, where);
     }
 }

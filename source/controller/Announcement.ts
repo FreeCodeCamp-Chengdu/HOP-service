@@ -16,23 +16,17 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    Announcement,
-    AnnouncementListChunk,
-    BaseFilter,
-    dataSource,
-    Hackathon,
-    User
-} from '../model';
-import { activityLogService } from '../service';
+import { Announcement, AnnouncementListChunk, BaseFilter, dataSource, Hackathon, User } from '../model';
+import { UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
 import { HackathonController } from './Hackathon';
 
-const store = dataSource.getRepository(Announcement),
-    hackathonStore = dataSource.getRepository(Hackathon);
+const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name/announcement')
 export class AnnouncementController {
+    service = new UserServiceWithLog(Announcement, ['title', 'content']);
+
     @Post()
     @Authorized()
     @HttpCode(201)
@@ -48,13 +42,7 @@ export class AnnouncementController {
 
         await HackathonController.ensureAdmin(createdBy.id, name);
 
-        const saved = await store.save({
-            ...announcement,
-            hackathon,
-            createdBy
-        });
-        await activityLogService.logCreate(createdBy, 'Announcement', saved.id);
-        return saved;
+        return this.service.createOne({ ...announcement, hackathon }, createdBy);
     }
 
     @Put('/:id')
@@ -66,17 +54,9 @@ export class AnnouncementController {
         @Param('id') id: number,
         @Body() newData: Announcement
     ) {
-        const old = await store.findOneBy({ id });
-
-        if (!old) throw new NotFoundError();
-
         await HackathonController.ensureAdmin(updatedBy.id, name);
 
-        const saved = await store.save({ ...old, ...newData, updatedBy });
-
-        await activityLogService.logUpdate(updatedBy, 'Announcement', id);
-
-        return saved;
+        return this.service.editOne(id, newData, updatedBy);
     }
 
     @Delete('/:id')
@@ -87,43 +67,24 @@ export class AnnouncementController {
         @Param('name') name: string,
         @Param('id') id: number
     ) {
-        const old = await store.findOne({
-            where: { id },
-            relations: ['hackathon']
-        });
-        if (!old) throw new NotFoundError();
-
         await HackathonController.ensureAdmin(deletedBy.id, name);
 
-        await store.save({ ...old, deletedBy });
-        await store.softDelete(id);
-
-        await activityLogService.logDelete(deletedBy, 'Announcement', id);
+        await this.service.deleteOne(id, deletedBy);
     }
 
     @Get('/:id')
     @OnNull(404)
     @ResponseSchema(Announcement)
     getOne(@Param('id') id: number) {
-        return store.findOneBy({ id });
+        return this.service.getOne(id);
     }
 
     @Get()
     @ResponseSchema(AnnouncementListChunk)
-    async getList(
-        @Param('name') name: string,
-        @QueryParams() { keywords, pageSize, pageIndex }: BaseFilter
-    ) {
-        const where = searchConditionOf<Announcement>(
-            ['title', 'content'],
-            keywords,
-            { hackathon: { name } }
-        );
-        const [list, count] = await store.findAndCount({
-            where,
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
+    getList(@Param('name') name: string, @QueryParams() { keywords, ...filter }: BaseFilter) {
+        const where = searchConditionOf<Announcement>(['title', 'content'], keywords, {
+            hackathon: { name }
         });
-        return { list, count };
+        return this.service.getList({ keywords, ...filter }, where);
     }
 }

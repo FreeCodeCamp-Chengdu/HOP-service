@@ -29,37 +29,37 @@ import {
     TeamMemberStatus,
     User
 } from '../model';
-import { activityLogService } from '../service';
+import { UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
 import { HackathonController } from './Hackathon';
 import { TeamController } from './Team';
 
-const store = dataSource.getRepository(TeamMember),
-    userStore = dataSource.getRepository(User),
+const userStore = dataSource.getRepository(User),
     teamStore = dataSource.getRepository(Team);
+const teamMemberService = new UserServiceWithLog(TeamMember, ['description']);
 
 @JsonController('/hackathon/:name/team/:id/member')
 export class TeamMemberController {
+    service = teamMemberService;
+
     static isAdmin = (userId: number, teamId: number) =>
-        store.existsBy({
+        teamMemberService.store.existsBy({
             team: { id: teamId },
             user: { id: userId },
             role: TeamMemberRole.Admin
         });
 
     static isMember = (userId: number, teamId: number) =>
-        store.existsBy({ user: { id: userId }, team: { id: teamId } });
+        teamMemberService.store.existsBy({ user: { id: userId }, team: { id: teamId } });
 
     static async addOne(member: Omit<TeamMember, keyof Base>) {
-        const saved = await store.save({
-            status: member.team.autoApprove
-                ? TeamMemberStatus.Approved
-                : TeamMemberStatus.PendingApproval,
-            ...member
-        });
-        await activityLogService.logCreate(member.createdBy, 'TeamMember', saved.id);
-
-        return saved;
+        return teamMemberService.createOne(
+            {
+                status: member.team.autoApprove ? TeamMemberStatus.Approved : TeamMemberStatus.PendingApproval,
+                ...member
+            },
+            member.createdBy
+        );
     }
 
     @Put('/:uid')
@@ -129,7 +129,7 @@ export class TeamMemberController {
         @Param('uid') uid: number,
         @Body() { role, description, status }: TeamMember
     ) {
-        const member = await store.findOneBy({
+        const member = await this.service.store.findOneBy({
             team: { id },
             user: { id: uid }
         });
@@ -143,15 +143,7 @@ export class TeamMemberController {
             await TeamController.ensureAdmin(updatedBy.id, id);
         } else await TeamController.ensureMember(updatedBy.id, id);
 
-        const saved = await store.save({
-            ...member,
-            ...authorization,
-            description,
-            updatedBy
-        });
-        await activityLogService.logUpdate(updatedBy, 'TeamMember', saved.id);
-
-        return saved;
+        return this.service.editOne(member.id, { ...authorization, description }, updatedBy);
     }
 
     @Delete('/:uid')
@@ -162,7 +154,7 @@ export class TeamMemberController {
         @Param('id') id: number,
         @Param('uid') uid: number
     ) {
-        const member = await store.findOneBy({
+        const member = await this.service.store.findOneBy({
             team: { id },
             user: { id: uid }
         });
@@ -172,33 +164,27 @@ export class TeamMemberController {
 
         await TeamController.ensureMember(deletedBy.id, id);
 
-        await store.save({ ...member, deletedBy });
-        await store.softDelete(member.id);
-
-        await activityLogService.logDelete(deletedBy, 'TeamMember', member.id);
+        await this.service.deleteOne(member.id, deletedBy);
     }
 
     @Delete()
     @Authorized()
     @OnUndefined(204)
     async leaveOne(@CurrentUser() deletedBy: User, @Param('id') id: number) {
-        const member = await store.findOneBy({
+        const member = await this.service.store.findOneBy({
             team: { id },
             user: { id: deletedBy.id }
         });
         if (!member) throw new ForbiddenError();
 
-        await store.save({ ...member, deletedBy });
-        await store.softDelete(member.id);
-
-        await activityLogService.logDelete(deletedBy, 'TeamMember', member.id);
+        await this.service.deleteOne(member.id, deletedBy);
     }
 
     @Get('/:uid')
     @OnNull(404)
     @ResponseSchema(TeamMember)
     getOne(@Param('id') id: number, @Param('uid') uid: number) {
-        return store.findOne({
+        return this.service.store.findOne({
             where: { team: { id }, user: { id: uid } },
             relations: ['user']
         });
@@ -206,22 +192,12 @@ export class TeamMemberController {
 
     @Get()
     @ResponseSchema(TeamMemberListChunk)
-    async getList(
-        @Param('id') id: number,
-        @QueryParams()
-        { role, status, keywords, pageSize, pageIndex }: TeamMemberFilter
-    ) {
+    getList(@Param('id') id: number, @QueryParams() { role, status, keywords, ...filter }: TeamMemberFilter) {
         const where = searchConditionOf<TeamMember>(['description'], keywords, {
             team: { id },
-            role,
-            status
+            ...(role && { role }),
+            ...(status && { status })
         });
-        const [list, count] = await store.findAndCount({
-            where,
-            relations: ['user'],
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
-        });
-        return { list, count };
+        return this.service.getList({ keywords, ...filter }, where, { relations: ['user'] });
     }
 }

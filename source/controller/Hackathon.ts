@@ -17,15 +17,8 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    dataSource,
-    Hackathon,
-    HackathonFilter,
-    HackathonListChunk,
-    StaffType,
-    User
-} from '../model';
-import { activityLogService } from '../service';
+import { dataSource, Hackathon, HackathonFilter, HackathonListChunk, StaffType, User } from '../model';
+import { UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
 import { EnrollmentController } from './Enrollment';
 import { PlatformAdminController } from './PlatformAdmin';
@@ -35,6 +28,16 @@ const store = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon')
 export class HackathonController {
+    service = new UserServiceWithLog(Hackathon, [
+        'name',
+        'displayName',
+        'ribbon',
+        'summary',
+        'detail',
+        'location',
+        'tags'
+    ]);
+
     static async ensureAdmin(userId: number, hackathonName: string) {
         if (
             !(await StaffController.isAdmin(userId, hackathonName)) &&
@@ -44,23 +47,17 @@ export class HackathonController {
     }
 
     static async ensureJudge(userId: number, hackathonName: string) {
-        if (!(await StaffController.isJudge(userId, hackathonName)))
-            throw new ForbiddenError();
+        if (!(await StaffController.isJudge(userId, hackathonName))) throw new ForbiddenError();
     }
 
     static async ensureEnrolled(userId: number, hackathonName: string) {
-        if (!(await EnrollmentController.isEnrolled(userId, hackathonName)))
-            throw new ForbiddenError();
+        if (!(await EnrollmentController.isEnrolled(userId, hackathonName))) throw new ForbiddenError();
     }
 
     @Put('/:name')
     @Authorized()
     @ResponseSchema(Hackathon)
-    async updateOne(
-        @CurrentUser() updatedBy: User,
-        @Param('name') name: string,
-        @Body() newData: Hackathon
-    ) {
+    async updateOne(@CurrentUser() updatedBy: User, @Param('name') name: string, @Body() newData: Hackathon) {
         const old = await store.findOne({
             where: { name },
             relations: ['createdBy']
@@ -69,11 +66,7 @@ export class HackathonController {
 
         await HackathonController.ensureAdmin(updatedBy.id, name);
 
-        const saved = await store.save({ ...old, ...newData, updatedBy });
-
-        await activityLogService.logUpdate(updatedBy, 'Hackathon', old.id);
-
-        return saved;
+        return this.service.editOne(old.id, newData, updatedBy);
     }
 
     @Get('/:name')
@@ -85,9 +78,8 @@ export class HackathonController {
             relations: ['createdBy']
         });
 
-        if (user) {
-            const hid = hackathon.id,
-                uid = user.id;
+        if (user && hackathon) {
+            const uid = user.id;
 
             hackathon.roles = {
                 isAdmin: await StaffController.isAdmin(uid, name),
@@ -101,33 +93,22 @@ export class HackathonController {
     @Delete('/:name')
     @Authorized()
     @OnUndefined(204)
-    async deleteOne(
-        @CurrentUser() deletedBy: User,
-        @Param('name') name: string
-    ) {
+    async deleteOne(@CurrentUser() deletedBy: User, @Param('name') name: string) {
         const old = await store.findOneBy({ name });
 
         if (!old) throw new NotFoundError();
 
         await HackathonController.ensureAdmin(deletedBy.id, name);
 
-        await store.save({ ...old, deletedBy });
-        await store.softDelete(old.id);
-
-        await activityLogService.logDelete(deletedBy, 'Hackathon', old.id);
+        await this.service.deleteOne(old.id, deletedBy);
     }
 
     @Post()
     @Authorized()
     @HttpCode(201)
     @ResponseSchema(Hackathon)
-    async createOne(
-        @CurrentUser() createdBy: User,
-        @Body() hackathon: Hackathon
-    ) {
-        const saved = await store.save({ ...hackathon, createdBy });
-
-        await activityLogService.logCreate(createdBy, 'Hackathon', saved.id);
+    async createOne(@CurrentUser() createdBy: User, @Body() hackathon: Hackathon) {
+        const saved = await this.service.createOne(hackathon, createdBy);
 
         await StaffController.addOne({
             type: StaffType.Admin,
@@ -141,40 +122,19 @@ export class HackathonController {
 
     @Get()
     @ResponseSchema(HackathonListChunk)
-    async getList(
+    getList(
         @QueryParams()
-        {
-            keywords,
-            pageSize,
-            pageIndex,
-            createdBy,
-            updatedBy,
-            ...filter
-        }: HackathonFilter
+        { keywords, createdBy, updatedBy, ...filter }: HackathonFilter
     ) {
         const where = searchConditionOf<Hackathon>(
-            [
-                'name',
-                'displayName',
-                'ribbon',
-                'summary',
-                'detail',
-                'location',
-                'tags'
-            ],
+            ['name', 'displayName', 'ribbon', 'summary', 'detail', 'location', 'tags'],
             keywords,
             {
                 ...filter,
-                createdBy: { id: createdBy },
-                updatedBy: { id: updatedBy }
+                ...(createdBy && { createdBy: { id: createdBy } }),
+                ...(updatedBy && { updatedBy: { id: updatedBy } })
             }
         );
-        const [list, count] = await store.findAndCount({
-            where,
-            relations: ['createdBy'],
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
-        });
-        return { list, count };
+        return this.service.getList({ keywords, ...filter }, where, { relations: ['createdBy'] });
     }
 }
