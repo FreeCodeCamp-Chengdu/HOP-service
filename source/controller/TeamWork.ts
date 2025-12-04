@@ -26,8 +26,8 @@ import {
     TeamWorkType,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { GitTemplateController } from './GitTemplate';
 import { TeamController } from './Team';
 
@@ -70,7 +70,7 @@ export class TeamWorkController {
             hackathon: team.hackathon,
             createdBy
         });
-        await ActivityLogController.logCreate(createdBy, 'TeamWork', saved.id);
+        await activityLogService.logCreate(createdBy, 'TeamWork', saved.id);
 
         return saved;
     }
@@ -93,7 +93,7 @@ export class TeamWorkController {
 
         const saved = await store.save({ ...old, ...work, updatedBy });
 
-        await ActivityLogController.logUpdate(updatedBy, 'TeamWork', id);
+        await activityLogService.logUpdate(updatedBy, 'TeamWork', id);
 
         return saved;
     }
@@ -113,7 +113,7 @@ export class TeamWorkController {
         await store.save({ ...old, deletedBy });
         await store.softDelete(id);
 
-        await ActivityLogController.logDelete(deletedBy, 'TeamWork', id);
+        await activityLogService.logDelete(deletedBy, 'TeamWork', id);
     }
 
     @Get('/:id')

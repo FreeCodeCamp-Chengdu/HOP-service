@@ -27,8 +27,8 @@ import {
     TeamMemberStatus,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 import { PlatformAdminController } from './PlatformAdmin';
 import { TeamMemberController } from './TeamMember';
@@ -76,7 +76,7 @@ export class TeamController {
 
         const saved = await store.save({ ...team, hackathon, createdBy });
 
-        await ActivityLogController.logCreate(createdBy, 'Team', saved.id);
+        await activityLogService.logCreate(createdBy, 'Team', saved.id);
 
         await TeamMemberController.addOne({
             role: TeamMemberRole.Admin,
@@ -108,7 +108,7 @@ export class TeamController {
 
         const saved = await store.save({ ...old, ...newData, updatedBy });
 
-        await ActivityLogController.logUpdate(updatedBy, 'Team', old.id);
+        await activityLogService.logUpdate(updatedBy, 'Team', old.id);
 
         return saved;
     }
@@ -128,7 +128,7 @@ export class TeamController {
         await store.save({ ...team, deletedBy });
         await store.softDelete(id);
 
-        await ActivityLogController.logDelete(deletedBy, 'Team', team.id);
+        await activityLogService.logDelete(deletedBy, 'Team', team.id);
     }
 
     @Get('/:id')

@@ -26,7 +26,7 @@ import {
     Hackathon,
     User
 } from '../model';
-import { ActivityLogController } from './ActivityLog';
+import { activityLogService } from '../service';
 import { HackathonController } from './Hackathon';
 
 const hackathonStore = dataSource.getRepository(Hackathon),
@@ -52,7 +52,7 @@ export class AwardController {
 
         const saved = await awardStore.save({ ...award, createdBy, hackathon });
 
-        await ActivityLogController.logCreate(createdBy, 'Award', saved.id);
+        await activityLogService.logCreate(createdBy, 'Award', saved.id);
 
         return saved;
     }
@@ -89,7 +89,7 @@ export class AwardController {
         };
         const saved = await awardStore.save(updatedAward);
 
-        await ActivityLogController.logUpdate(updatedBy, 'Award', saved.id);
+        await activityLogService.logUpdate(updatedBy, 'Award', saved.id);
 
         return saved;
     }
@@ -111,7 +111,7 @@ export class AwardController {
         await awardStore.save({ ...award, deletedBy });
         await awardStore.softDelete(award.id);
 
-        await ActivityLogController.logDelete(deletedBy, 'Award', award.id);
+        await activityLogService.logDelete(deletedBy, 'Award', award.id);
     }
 
     @Get()
@@ -157,11 +157,7 @@ export class AwardAssignmentController {
             hackathon: { id: award.hackathon.id },
             award
         });
-        await ActivityLogController.logCreate(
-            currentUser,
-            'AwardAssignment',
-            saved.id
-        );
+        await activityLogService.logCreate(currentUser, 'AwardAssignment', saved.id);
         return saved;
     }
 
@@ -190,11 +186,7 @@ export class AwardAssignmentController {
             hackathon: assignment.hackathon,
             award: assignment.award
         });
-        await ActivityLogController.logUpdate(
-            currentUser,
-            'AwardAssignment',
-            saved.id
-        );
+        await activityLogService.logUpdate(currentUser, 'AwardAssignment', saved.id);
         return saved;
     }
 

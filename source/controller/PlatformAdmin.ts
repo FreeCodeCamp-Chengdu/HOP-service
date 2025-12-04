@@ -22,8 +22,8 @@ import {
     Role,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 
 const store = dataSource.getRepository(PlatformAdmin),
     userStore = dataSource.getRepository(User);
@@ -55,7 +55,7 @@ export class PlatformAdminController {
 
         const saved = await store.save({ user, description, createdBy });
 
-        await ActivityLogController.logCreate(createdBy, 'PlatformAdmin', saved.id);
+        await activityLogService.logCreate(createdBy, 'PlatformAdmin', saved.id);
 
         return saved;
     }
@@ -78,7 +78,7 @@ export class PlatformAdminController {
 
         await store.update(admin.id, { deletedBy });
 
-        await ActivityLogController.logDelete(deletedBy, 'PlatformAdmin', admin.id);
+        await activityLogService.logDelete(deletedBy, 'PlatformAdmin', admin.id);
     }
 
     @Get()

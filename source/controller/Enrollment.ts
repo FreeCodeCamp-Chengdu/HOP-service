@@ -23,8 +23,8 @@ import {
     Hackathon,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 
 const store = dataSource.getRepository(Enrollment),
@@ -60,7 +60,7 @@ export class EnrollmentController {
 
         const saved = await store.save({ ...old, status, updatedBy });
 
-        await ActivityLogController.logUpdate(updatedBy, 'Enrollment', old.id);
+        await activityLogService.logUpdate(updatedBy, 'Enrollment', old.id);
 
         return saved;
     }
@@ -93,7 +93,7 @@ export class EnrollmentController {
                 ? EnrollmentStatus.Approved
                 : EnrollmentStatus.PendingApproval
         });
-        await ActivityLogController.logCreate(createdBy, 'Enrollment', saved.id);
+        await activityLogService.logCreate(createdBy, 'Enrollment', saved.id);
 
         return saved;
     }

@@ -25,8 +25,8 @@ import {
     HackathonBase,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 
 const store = dataSource.getRepository(GitTemplate),
@@ -71,11 +71,7 @@ export class GitTemplateController {
 
         const saved = await store.save({ ...repository, hackathon, createdBy });
 
-        await ActivityLogController.logCreate(
-            createdBy,
-            'GitTemplate',
-            saved.id
-        );
+        await activityLogService.logCreate(createdBy, 'GitTemplate', saved.id);
         return saved;
     }
 
@@ -96,7 +92,7 @@ export class GitTemplateController {
         await store.save({ ...gitTemplate, deletedBy });
         await store.softDelete(id);
 
-        await ActivityLogController.logDelete(deletedBy, 'GitTemplate', id);
+        await activityLogService.logDelete(deletedBy, 'GitTemplate', id);
     }
 
     @Get('/:id')

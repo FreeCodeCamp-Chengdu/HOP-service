@@ -25,8 +25,8 @@ import {
     StaffType,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 
 const store = dataSource.getRepository(Staff),
@@ -53,7 +53,7 @@ export class StaffController {
     static async addOne(staff: Omit<Staff, keyof Base>) {
         const saved = await store.save(staff);
 
-        await ActivityLogController.logCreate(staff.createdBy, 'Staff', saved.id);
+        await activityLogService.logCreate(staff.createdBy, 'Staff', saved.id);
 
         return saved;
     }
@@ -111,7 +111,7 @@ export class StaffController {
             description,
             updatedBy
         });
-        await ActivityLogController.logUpdate(updatedBy, 'Staff', staff.id);
+        await activityLogService.logUpdate(updatedBy, 'Staff', staff.id);
 
         return saved;
     }
@@ -138,7 +138,7 @@ export class StaffController {
         await store.save({ ...staff, deletedBy });
         await store.softDelete(staff.id);
 
-        await ActivityLogController.logDelete(deletedBy, 'Staff', staff.id);
+        await activityLogService.logDelete(deletedBy, 'Staff', staff.id);
     }
 
     @Get()

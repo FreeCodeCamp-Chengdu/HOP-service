@@ -12,7 +12,7 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 
 import { dataSource, Hackathon, Questionnaire, Standard, User } from '../model';
-import { ActivityLogController } from './ActivityLog';
+import { activityLogService } from '../service';
 import { HackathonController } from './Hackathon';
 
 const questionnaireStore = dataSource.getRepository(Questionnaire),
@@ -51,18 +51,8 @@ export class SurveyController {
             ...(old ? { updatedBy: user } : { createdBy: user })
         });
 
-        if (old)
-            await ActivityLogController.logUpdate(
-                user,
-                'Questionnaire',
-                saved.id
-            );
-        else
-            await ActivityLogController.logCreate(
-                user,
-                'Questionnaire',
-                saved.id
-            );
+        if (old) await activityLogService.logUpdate(user, 'Questionnaire', saved.id);
+        else await activityLogService.logCreate(user, 'Questionnaire', saved.id);
         return saved;
     }
 
@@ -96,9 +86,8 @@ export class SurveyController {
             ...(old ? { updatedBy: user } : { createdBy: user })
         });
 
-        if (old)
-            await ActivityLogController.logUpdate(user, 'Standard', saved.id);
-        else await ActivityLogController.logCreate(user, 'Standard', saved.id);
+        if (old) await activityLogService.logUpdate(user, 'Standard', saved.id);
+        else await activityLogService.logCreate(user, 'Standard', saved.id);
 
         return saved;
     }

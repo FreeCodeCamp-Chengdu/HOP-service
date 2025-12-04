@@ -25,8 +25,8 @@ import {
     StaffType,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { EnrollmentController } from './Enrollment';
 import { PlatformAdminController } from './PlatformAdmin';
 import { StaffController } from './Staff';
@@ -71,7 +71,7 @@ export class HackathonController {
 
         const saved = await store.save({ ...old, ...newData, updatedBy });
 
-        await ActivityLogController.logUpdate(updatedBy, 'Hackathon', old.id);
+        await activityLogService.logUpdate(updatedBy, 'Hackathon', old.id);
 
         return saved;
     }
@@ -114,7 +114,7 @@ export class HackathonController {
         await store.save({ ...old, deletedBy });
         await store.softDelete(old.id);
 
-        await ActivityLogController.logDelete(deletedBy, 'Hackathon', old.id);
+        await activityLogService.logDelete(deletedBy, 'Hackathon', old.id);
     }
 
     @Post()
@@ -127,7 +127,7 @@ export class HackathonController {
     ) {
         const saved = await store.save({ ...hackathon, createdBy });
 
-        await ActivityLogController.logCreate(createdBy, 'Hackathon', saved.id);
+        await activityLogService.logCreate(createdBy, 'Hackathon', saved.id);
 
         await StaffController.addOne({
             type: StaffType.Admin,

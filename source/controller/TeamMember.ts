@@ -29,8 +29,8 @@ import {
     TeamMemberStatus,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 import { TeamController } from './Team';
 
@@ -57,7 +57,7 @@ export class TeamMemberController {
                 : TeamMemberStatus.PendingApproval,
             ...member
         });
-        await ActivityLogController.logCreate(member.createdBy, 'TeamMember', saved.id);
+        await activityLogService.logCreate(member.createdBy, 'TeamMember', saved.id);
 
         return saved;
     }
@@ -149,7 +149,7 @@ export class TeamMemberController {
             description,
             updatedBy
         });
-        await ActivityLogController.logUpdate(updatedBy, 'TeamMember', saved.id);
+        await activityLogService.logUpdate(updatedBy, 'TeamMember', saved.id);
 
         return saved;
     }
@@ -175,7 +175,7 @@ export class TeamMemberController {
         await store.save({ ...member, deletedBy });
         await store.softDelete(member.id);
 
-        await ActivityLogController.logDelete(deletedBy, 'TeamMember', member.id);
+        await activityLogService.logDelete(deletedBy, 'TeamMember', member.id);
     }
 
     @Delete()
@@ -191,7 +191,7 @@ export class TeamMemberController {
         await store.save({ ...member, deletedBy });
         await store.softDelete(member.id);
 
-        await ActivityLogController.logDelete(deletedBy, 'TeamMember', member.id);
+        await activityLogService.logDelete(deletedBy, 'TeamMember', member.id);
     }
 
     @Get('/:uid')

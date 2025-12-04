@@ -24,8 +24,8 @@ import {
     Hackathon,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 
 const store = dataSource.getRepository(Announcement),
@@ -53,11 +53,7 @@ export class AnnouncementController {
             hackathon,
             createdBy
         });
-        await ActivityLogController.logCreate(
-            createdBy,
-            'Announcement',
-            saved.id
-        );
+        await activityLogService.logCreate(createdBy, 'Announcement', saved.id);
         return saved;
     }
 
@@ -78,7 +74,7 @@ export class AnnouncementController {
 
         const saved = await store.save({ ...old, ...newData, updatedBy });
 
-        await ActivityLogController.logUpdate(updatedBy, 'Announcement', id);
+        await activityLogService.logUpdate(updatedBy, 'Announcement', id);
 
         return saved;
     }
@@ -102,7 +98,7 @@ export class AnnouncementController {
         await store.save({ ...old, deletedBy });
         await store.softDelete(id);
 
-        await ActivityLogController.logDelete(deletedBy, 'Announcement', id);
+        await activityLogService.logDelete(deletedBy, 'Announcement', id);
     }
 
     @Get('/:id')

@@ -23,8 +23,8 @@ import {
     OrganizerListChunk,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 
 @JsonController('/hackathon/:name/organizer')
@@ -54,7 +54,7 @@ export class OrganizerController {
             hackathon,
             createdBy
         });
-        await ActivityLogController.logCreate(createdBy, 'Organizer', saved.id);
+        await activityLogService.logCreate(createdBy, 'Organizer', saved.id);
 
         return saved;
     }
@@ -78,7 +78,7 @@ export class OrganizerController {
 
         const saved = await this.store.save({ ...old, ...newData, updatedBy });
 
-        await ActivityLogController.logUpdate(updatedBy, 'Organizer', old.id);
+        await activityLogService.logUpdate(updatedBy, 'Organizer', old.id);
 
         return saved;
     }
@@ -102,11 +102,7 @@ export class OrganizerController {
         await this.store.save({ ...organizer, deletedBy });
         await this.store.softDelete(id);
 
-        await ActivityLogController.logDelete(
-            deletedBy,
-            'Organizer',
-            organizer.id
-        );
+        await activityLogService.logDelete(deletedBy, 'Organizer', organizer.id);
     }
 
     @Get()

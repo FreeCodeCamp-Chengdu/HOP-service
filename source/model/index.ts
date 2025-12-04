@@ -63,11 +63,13 @@ const entities = [
 
 const commonOptions: Pick<
     SqliteConnectionOptions,
-    'logging' | 'synchronize' | 'entities' | 'migrations'
+    'logging' | 'synchronize' | 'entities' | 'invalidWhereValuesBehavior' | 'migrations'
 > = {
     logging: true,
     synchronize: true,
     entities,
+    // remove at next Major version: https://typeorm.io/docs/data-source/null-and-undefined-handling/#default-behavior
+    invalidWhereValuesBehavior: { null: 'throw', undefined: 'throw' },
     migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`]
 };
 

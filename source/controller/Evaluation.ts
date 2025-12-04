@@ -23,8 +23,8 @@ import {
     Team,
     User
 } from '../model';
+import { activityLogService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 
 const store = dataSource.getRepository(Evaluation),
     teamStore = dataSource.getRepository(Team);
@@ -58,7 +58,7 @@ export class EvaluationController {
             hackathon: team.hackathon,
             createdBy
         });
-        await ActivityLogController.logCreate(createdBy, 'Evaluation', saved.id);
+        await activityLogService.logCreate(createdBy, 'Evaluation', saved.id);
 
         const allScores = (await store.findBy({ team: { id: tid } }))
             .map(({ scores }) => scores)
