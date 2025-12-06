@@ -88,7 +88,7 @@ export class AwardController {
 
     @Get()
     @ResponseSchema(AwardListChunk)
-    getList(@Param('name') name: string, @QueryParams() { ...filter }: BaseFilter) {
+    getList(@Param('name') name: string, @QueryParams() filter: BaseFilter) {
         return this.service.getList(
             filter,
             { hackathon: { name } },

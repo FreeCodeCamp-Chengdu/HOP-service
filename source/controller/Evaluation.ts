@@ -14,7 +14,15 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { groupBy, sum } from 'web-utility';
 
-import { BaseFilter, dataSource, Evaluation, EvaluationListChunk, Score, Team, User } from '../model';
+import {
+    BaseFilter,
+    dataSource,
+    Evaluation,
+    EvaluationListChunk,
+    Score,
+    Team,
+    User
+} from '../model';
 import { UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
 
@@ -45,7 +53,10 @@ export class EvaluationController {
         if (now < +new Date(hackathon.judgeStartedAt) || now > +new Date(hackathon.judgeEndedAt))
             throw new ForbiddenError('Not in evaluation period');
 
-        const saved = await this.service.createOne({ ...evaluation, team, hackathon: team.hackathon }, createdBy);
+        const saved = await this.service.createOne(
+            { ...evaluation, team, hackathon: team.hackathon },
+            createdBy
+        );
 
         const allScores = (await this.service.store.findBy({ team: { id: tid } }))
             .map(({ scores }) => scores)

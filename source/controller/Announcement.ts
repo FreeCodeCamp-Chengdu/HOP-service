@@ -16,10 +16,16 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { Announcement, AnnouncementListChunk, BaseFilter, dataSource, Hackathon, User } from '../model';
-import { UserServiceWithLog } from '../service';
+import {
+    Announcement,
+    AnnouncementListChunk,
+    BaseFilter,
+    dataSource,
+    Hackathon,
+    User
+} from '../model';
+import { hackathonService, UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
-import { HackathonController } from './Hackathon';
 
 const hackathonStore = dataSource.getRepository(Hackathon);
 
@@ -40,7 +46,7 @@ export class AnnouncementController {
 
         if (!hackathon) throw new NotFoundError();
 
-        await HackathonController.ensureAdmin(createdBy.id, name);
+        await hackathonService.ensureAdmin(createdBy.id, name);
 
         return this.service.createOne({ ...announcement, hackathon }, createdBy);
     }
@@ -54,7 +60,7 @@ export class AnnouncementController {
         @Param('id') id: number,
         @Body() newData: Announcement
     ) {
-        await HackathonController.ensureAdmin(updatedBy.id, name);
+        await hackathonService.ensureAdmin(updatedBy.id, name);
 
         return this.service.editOne(id, newData, updatedBy);
     }
@@ -67,7 +73,7 @@ export class AnnouncementController {
         @Param('name') name: string,
         @Param('id') id: number
     ) {
-        await HackathonController.ensureAdmin(deletedBy.id, name);
+        await hackathonService.ensureAdmin(deletedBy.id, name);
 
         await this.service.deleteOne(id, deletedBy);
     }

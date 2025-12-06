@@ -15,10 +15,16 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { dataSource, Hackathon, Organizer, OrganizerFilter, OrganizerListChunk, User } from '../model';
-import { UserServiceWithLog } from '../service';
+import {
+    dataSource,
+    Hackathon,
+    Organizer,
+    OrganizerFilter,
+    OrganizerListChunk,
+    User
+} from '../model';
+import { hackathonService, UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
-import { HackathonController } from './Hackathon';
 
 @JsonController('/hackathon/:name/organizer')
 export class OrganizerController {
@@ -40,7 +46,7 @@ export class OrganizerController {
         });
         if (!hackathon) throw new NotFoundError();
 
-        await HackathonController.ensureAdmin(createdBy.id, name);
+        await hackathonService.ensureAdmin(createdBy.id, name);
 
         return this.service.createOne({ ...organizer, hackathon }, createdBy);
     }
@@ -54,7 +60,7 @@ export class OrganizerController {
         @Param('id') id: number,
         @Body() newData: Organizer
     ) {
-        await HackathonController.ensureAdmin(updatedBy.id, name);
+        await hackathonService.ensureAdmin(updatedBy.id, name);
 
         return this.service.editOne(id, newData, updatedBy);
     }
@@ -67,14 +73,17 @@ export class OrganizerController {
         @Param('name') name: string,
         @Param('id') id: number
     ) {
-        await HackathonController.ensureAdmin(deletedBy.id, name);
+        await hackathonService.ensureAdmin(deletedBy.id, name);
 
         await this.service.deleteOne(id, deletedBy);
     }
 
     @Get()
     @ResponseSchema(OrganizerListChunk)
-    getList(@Param('name') name: string, @QueryParams() { type, keywords, ...filter }: OrganizerFilter) {
+    getList(
+        @Param('name') name: string,
+        @QueryParams() { type, keywords, ...filter }: OrganizerFilter
+    ) {
         const where = searchConditionOf<Organizer>(['name', 'description', 'url'], keywords, {
             hackathon: { name },
             ...(type && { type })

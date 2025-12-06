@@ -78,6 +78,7 @@ export class PlatformAdminController {
     @ResponseSchema(PlatformAdminListChunk)
     getList(@QueryParams() { keywords, ...filter }: BaseFilter) {
         const where = searchConditionOf<PlatformAdmin>(['description'], keywords);
+
         return this.service.getList({ keywords, ...filter }, where, {
             relations: ['user', 'createdBy']
         });
