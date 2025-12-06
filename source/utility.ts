@@ -2,7 +2,7 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { config } from 'dotenv';
 import { DataObject } from 'mobx-restful';
 import { FindOneOptions, FindOptionsWhere, ILike } from 'typeorm';
-import { isEmpty } from 'web-utility';
+import { likeNull } from 'web-utility';
 
 export const { NODE_ENV = 'development' } = process.env;
 
@@ -28,7 +28,7 @@ export type NoEmptyFields<T> = {
 
 export const cleanEmptyFields = <T extends DataObject>(object: T) =>
     Object.fromEntries(
-        Object.entries(object).filter(([, value]) => !isEmpty(value))
+        Object.entries(object).filter(([, value]) => !likeNull(value))
     ) as NoEmptyFields<T>;
 
 export const searchConditionOf = <T extends DataObject>(

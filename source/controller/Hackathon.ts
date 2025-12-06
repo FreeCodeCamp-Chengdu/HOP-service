@@ -3,7 +3,6 @@ import {
     Body,
     CurrentUser,
     Delete,
-    ForbiddenError,
     Get,
     HttpCode,
     JsonController,
@@ -17,22 +16,13 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    dataSource,
-    Hackathon,
-    HackathonFilter,
-    HackathonListChunk,
-    StaffType,
-    User
-} from '../model';
-import { enrollmentService,hackathonService, staffService } from '../service';
-import { searchConditionOf } from '../utility';
-
-const store = dataSource.getRepository(Hackathon);
+import { Hackathon, HackathonFilter, HackathonListChunk, StaffType, User } from '../model';
+import { enrollmentService, hackathonService, staffService } from '../service';
 
 @JsonController('/hackathon')
 export class HackathonController {
     service = hackathonService;
+    store = this.service.store;
 
     @Put('/:name')
     @Authorized()
@@ -42,7 +32,7 @@ export class HackathonController {
         @Param('name') name: string,
         @Body() newData: Hackathon
     ) {
-        const old = await store.findOne({
+        const old = await this.store.findOne({
             where: { name },
             relations: ['createdBy']
         });
@@ -57,7 +47,7 @@ export class HackathonController {
     @ResponseSchema(Hackathon)
     @OnNull(404)
     async getOne(@CurrentUser() user: User, @Param('name') name: string) {
-        const hackathon = await store.findOne({
+        const hackathon = await this.store.findOne({
             where: { name },
             relations: ['createdBy']
         });
@@ -78,7 +68,7 @@ export class HackathonController {
     @Authorized()
     @OnUndefined(204)
     async deleteOne(@CurrentUser() deletedBy: User, @Param('name') name: string) {
-        const old = await store.findOneBy({ name });
+        const old = await this.store.findOneBy({ name });
 
         if (!old) throw new NotFoundError();
 
@@ -109,19 +99,7 @@ export class HackathonController {
 
     @Get()
     @ResponseSchema(HackathonListChunk)
-    getList(
-        @QueryParams()
-        { keywords, createdBy, updatedBy, ...filter }: HackathonFilter
-    ) {
-        const where = searchConditionOf<Hackathon>(
-            ['name', 'displayName', 'ribbon', 'summary', 'detail', 'location', 'tags'],
-            keywords,
-            {
-                ...filter,
-                ...(createdBy && { createdBy: { id: createdBy } }),
-                ...(updatedBy && { updatedBy: { id: updatedBy } })
-            }
-        );
-        return this.service.getList({ keywords, ...filter }, where, { relations: ['createdBy'] });
+    getList(@QueryParams() filter: HackathonFilter) {
+        return this.service.getList(filter);
     }
 }

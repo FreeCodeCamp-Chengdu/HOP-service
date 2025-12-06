@@ -94,12 +94,7 @@ export class UserController {
 
     @Get()
     @ResponseSchema(UserListChunk)
-    getList(@QueryParams() { gender, keywords, ...filter }: UserFilter) {
-        const where = searchConditionOf<User>(
-            ['email', 'mobilePhone', 'name'],
-            keywords,
-            gender && { gender }
-        );
-        return this.service.getList({ keywords, ...filter }, where);
+    getList(@QueryParams() filter: UserFilter) {
+        return this.service.getList(filter);
     }
 }
