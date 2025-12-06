@@ -15,21 +15,14 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    dataSource,
-    Hackathon,
-    Organizer,
-    OrganizerFilter,
-    OrganizerListChunk,
-    User
-} from '../model';
+import { dataSource, Hackathon, Organizer, OrganizerFilter, OrganizerListChunk, User } from '../model';
+import { UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
 import { HackathonController } from './Hackathon';
 
 @JsonController('/hackathon/:name/organizer')
 export class OrganizerController {
-    store = dataSource.getRepository(Organizer);
+    service = new UserServiceWithLog(Organizer, ['name', 'description', 'url']);
     hackathonStore = dataSource.getRepository(Hackathon);
 
     @Post()
@@ -49,14 +42,7 @@ export class OrganizerController {
 
         await HackathonController.ensureAdmin(createdBy.id, name);
 
-        const saved = await this.store.save({
-            ...organizer,
-            hackathon,
-            createdBy
-        });
-        await ActivityLogController.logCreate(createdBy, 'Organizer', saved.id);
-
-        return saved;
+        return this.service.createOne({ ...organizer, hackathon }, createdBy);
     }
 
     @Put('/:id')
@@ -68,19 +54,9 @@ export class OrganizerController {
         @Param('id') id: number,
         @Body() newData: Organizer
     ) {
-        const old = await this.store.findOne({
-            where: { id },
-            relations: ['hackathon']
-        });
-        if (!old) throw new NotFoundError();
-
         await HackathonController.ensureAdmin(updatedBy.id, name);
 
-        const saved = await this.store.save({ ...old, ...newData, updatedBy });
-
-        await ActivityLogController.logUpdate(updatedBy, 'Organizer', old.id);
-
-        return saved;
+        return this.service.editOne(id, newData, updatedBy);
     }
 
     @Delete('/:id')
@@ -91,40 +67,18 @@ export class OrganizerController {
         @Param('name') name: string,
         @Param('id') id: number
     ) {
-        const organizer = await this.store.findOne({
-            where: { id },
-            relations: ['hackathon']
-        });
-        if (!organizer) throw new NotFoundError();
-
         await HackathonController.ensureAdmin(deletedBy.id, name);
 
-        await this.store.save({ ...organizer, deletedBy });
-        await this.store.softDelete(id);
-
-        await ActivityLogController.logDelete(
-            deletedBy,
-            'Organizer',
-            organizer.id
-        );
+        await this.service.deleteOne(id, deletedBy);
     }
 
     @Get()
     @ResponseSchema(OrganizerListChunk)
-    async getList(
-        @Param('name') name: string,
-        @QueryParams() { type, keywords, pageSize, pageIndex }: OrganizerFilter
-    ) {
-        const where = searchConditionOf<Organizer>(
-            ['name', 'description', 'url'],
-            keywords,
-            { hackathon: { name }, ...(type && { type }) }
-        );
-        const [list, count] = await this.store.findAndCount({
-            where,
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
+    getList(@Param('name') name: string, @QueryParams() { type, keywords, ...filter }: OrganizerFilter) {
+        const where = searchConditionOf<Organizer>(['name', 'description', 'url'], keywords, {
+            hackathon: { name },
+            ...(type && { type })
         });
-        return { list, count };
+        return this.service.getList({ keywords, ...filter }, where);
     }
 }

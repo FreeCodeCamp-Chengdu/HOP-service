@@ -26,14 +26,14 @@ import {
     Hackathon,
     User
 } from '../model';
-import { ActivityLogController } from './ActivityLog';
-import { HackathonController } from './Hackathon';
+import { awardAssignmentService, awardService, hackathonService } from '../service';
 
-const hackathonStore = dataSource.getRepository(Hackathon),
-    awardStore = dataSource.getRepository(Award);
+const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name/award')
 export class AwardController {
+    service = awardService;
+
     @Post()
     @Authorized()
     @HttpCode(201)
@@ -45,23 +45,18 @@ export class AwardController {
     ) {
         const hackathon = await hackathonStore.findOneBy({ name });
 
-        if (!hackathon)
-            throw new NotFoundError(`Hackathon ${name} is not found`);
+        if (!hackathon) throw new NotFoundError(`Hackathon ${name} is not found`);
 
-        await HackathonController.ensureAdmin(createdBy.id, name);
+        await hackathonService.ensureAdmin(createdBy.id, name);
 
-        const saved = await awardStore.save({ ...award, createdBy, hackathon });
-
-        await ActivityLogController.logCreate(createdBy, 'Award', saved.id);
-
-        return saved;
+        return this.service.createOne({ ...award, hackathon }, createdBy);
     }
 
     @Get('/:id')
     @OnNull(404)
     @ResponseSchema(Award)
     getOne(@Param('id') id: number) {
-        return awardStore.findOneBy({ id });
+        return this.service.getOne(id);
     }
 
     @Put('/:id')
@@ -73,25 +68,9 @@ export class AwardController {
         @Param('id') id: number,
         @Body() updateData: Award
     ) {
-        const award = await awardStore.findOneBy({ id });
+        await hackathonService.ensureAdmin(updatedBy.id, name);
 
-        if (!award) throw new NotFoundError(`Award ${id} is not found`);
-
-        await HackathonController.ensureAdmin(updatedBy.id, name);
-
-        // update only allowed fields
-        const updatedAward = {
-            ...award,
-            ...updateData,
-            id, // make sure id is not overridden
-            updatedBy,
-            hackathon: award.hackathon // make sure hackathon relationship is not changed
-        };
-        const saved = await awardStore.save(updatedAward);
-
-        await ActivityLogController.logUpdate(updatedBy, 'Award', saved.id);
-
-        return saved;
+        return this.service.editOne(id, updateData, updatedBy);
     }
 
     @Delete('/:id')
@@ -102,38 +81,27 @@ export class AwardController {
         @Param('name') name: string,
         @Param('id') id: number
     ) {
-        const award = await awardStore.findOneBy({ id });
+        await hackathonService.ensureAdmin(deletedBy.id, name);
 
-        if (!award) throw new NotFoundError(`Award "${id}" is not found`);
-
-        await HackathonController.ensureAdmin(deletedBy.id, name);
-
-        await awardStore.save({ ...award, deletedBy });
-        await awardStore.softDelete(award.id);
-
-        await ActivityLogController.logDelete(deletedBy, 'Award', award.id);
+        await this.service.deleteOne(id, deletedBy);
     }
 
     @Get()
     @ResponseSchema(AwardListChunk)
-    async getList(
-        @Param('name') name: string,
-        @QueryParams() { pageSize, pageIndex }: BaseFilter
-    ) {
-        const [list, count] = await awardStore.findAndCount({
-            where: { hackathon: { name } },
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize,
-            relations: ['createdBy', 'updatedBy']
-        });
-        return { list, count };
+    getList(@Param('name') name: string, @QueryParams() { ...filter }: BaseFilter) {
+        return this.service.getList(
+            filter,
+            { hackathon: { name } },
+            { relations: ['createdBy', 'updatedBy'] }
+        );
     }
 }
 
-const assignmentStore = dataSource.getRepository(AwardAssignment);
-
 @JsonController('/hackathon/:name/award/:aid/assignment')
 export class AwardAssignmentController {
+    service = awardAssignmentService;
+    awardService = awardService;
+
     @Post()
     @Authorized()
     @HttpCode(201)
@@ -144,25 +112,15 @@ export class AwardAssignmentController {
         @Param('aid') aid: number,
         @Body() assignment: AwardAssignment
     ) {
-        const award = await awardStore.findOne({
-            where: { id: aid },
-            relations: ['hackathon']
-        });
+        const award = await this.awardService.getOne(aid, ['hackathon']);
         if (!award) throw new NotFoundError(`Award "${aid}" is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, name);
+        await hackathonService.ensureAdmin(currentUser.id, name);
 
-        const saved = await assignmentStore.save({
-            ...assignment,
-            hackathon: { id: award.hackathon.id },
-            award
-        });
-        await ActivityLogController.logCreate(
-            currentUser,
-            'AwardAssignment',
-            saved.id
+        return this.service.createOne(
+            { ...assignment, hackathon: award.hackathon, award },
+            currentUser
         );
-        return saved;
     }
 
     @Put('/:id')
@@ -174,57 +132,15 @@ export class AwardAssignmentController {
         @Param('id') id: number,
         @Body() newData: AwardAssignment
     ) {
-        const assignment = await assignmentStore.findOne({
-            where: { id },
-            relations: ['hackathon', 'award']
-        });
-        if (!assignment)
-            throw new NotFoundError(`AwardAssignment "${id}" is not found`);
+        await hackathonService.ensureAdmin(currentUser.id, name);
 
-        await HackathonController.ensureAdmin(currentUser.id, name);
-
-        const saved = await assignmentStore.save({
-            ...assignment,
-            ...newData,
-            id,
-            hackathon: assignment.hackathon,
-            award: assignment.award
-        });
-        await ActivityLogController.logUpdate(
-            currentUser,
-            'AwardAssignment',
-            saved.id
-        );
-        return saved;
-    }
-
-    static async getList(
-        dimension: keyof AwardAssignment,
-        id: number,
-        pageSize: number,
-        pageIndex: number
-    ) {
-        const [list, count] = await assignmentStore.findAndCount({
-            where: { [dimension]: { id } },
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize,
-            relations: ['createdBy', 'updatedBy', 'award', 'user', 'team']
-        });
-        return { list, count };
+        return this.service.editOne(id, newData, currentUser);
     }
 
     @Get()
     @ResponseSchema(AwardAssignmentListChunk)
-    getList(
-        @Param('aid') aid: number,
-        @QueryParams() { pageSize, pageIndex }: BaseFilter
-    ) {
-        return AwardAssignmentController.getList(
-            'award',
-            aid,
-            pageSize,
-            pageIndex
-        );
+    getList(@Param('aid') aid: number, @QueryParams() { pageSize, pageIndex }: BaseFilter) {
+        return awardAssignmentService.getListByDimension('award', aid, pageSize, pageIndex);
     }
 }
 
@@ -232,15 +148,7 @@ export class AwardAssignmentController {
 export class TeamAwardAssignmentController {
     @Get()
     @ResponseSchema(AwardAssignmentListChunk)
-    getList(
-        @Param('id') id: number,
-        @QueryParams() { pageSize, pageIndex }: BaseFilter
-    ) {
-        return AwardAssignmentController.getList(
-            'team',
-            id,
-            pageSize,
-            pageIndex
-        );
+    getList(@Param('id') id: number, @QueryParams() { pageSize, pageIndex }: BaseFilter) {
+        return awardAssignmentService.getListByDimension('team', id, pageSize, pageIndex);
     }
 }

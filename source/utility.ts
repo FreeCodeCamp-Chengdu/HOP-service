@@ -1,12 +1,16 @@
 import { S3Client } from '@aws-sdk/client-s3';
 import { config } from 'dotenv';
 import { DataObject } from 'mobx-restful';
-import { FindOptionsWhere, ILike } from 'typeorm';
+import { FindOneOptions, FindOptionsWhere, ILike } from 'typeorm';
+import { isEmpty } from 'web-utility';
 
-config({ path: [`.env.${process.env.NODE_ENV}.local`, '.env.local', '.env'] });
+export const { NODE_ENV = 'development' } = process.env;
+
+export const isProduct = NODE_ENV === 'production';
+
+config({ path: [`.env.${NODE_ENV}.local`, '.env.local', '.env'] });
 
 export const {
-    NODE_ENV,
     HTTP_PROXY,
     PORT = 8080,
     DATABASE_URL,
@@ -18,16 +22,21 @@ export const {
     AWS_S3_PUBLIC_HOST
 } = process.env;
 
-export const isProduct = NODE_ENV === 'production';
+export type NoEmptyFields<T> = {
+    [K in keyof T as T[K] extends null | undefined | '' | [] ? never : K]: T[K];
+};
+
+export const cleanEmptyFields = <T extends DataObject>(object: T) =>
+    Object.fromEntries(
+        Object.entries(object).filter(([, value]) => !isEmpty(value))
+    ) as NoEmptyFields<T>;
 
 export const searchConditionOf = <T extends DataObject>(
     keys: (keyof T)[],
     keywords = '',
     filter?: FindOptionsWhere<T>
-) =>
-    keywords
-        ? keys.map(key => ({ [key]: ILike(`%${keywords}%`), ...filter }))
-        : filter;
+): FindOneOptions<T>['where'] =>
+    keywords ? keys.map(key => ({ [key]: ILike(`%${keywords}%`), ...filter })) : filter;
 
 export const s3Client = new S3Client({
     region: 'auto',

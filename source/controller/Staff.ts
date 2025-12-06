@@ -16,7 +16,6 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 
 import {
-    Base,
     dataSource,
     Hackathon,
     Staff,
@@ -25,38 +24,16 @@ import {
     StaffType,
     User
 } from '../model';
+import { hackathonService,staffService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
-import { HackathonController } from './Hackathon';
 
-const store = dataSource.getRepository(Staff),
-    userStore = dataSource.getRepository(User),
+const userStore = dataSource.getRepository(User),
     hackathonStore = dataSource.getRepository(Hackathon);
 const StaffTypeRegExp = Object.values(StaffType).join('|');
 
 @JsonController(`/hackathon/:name/:type(${StaffTypeRegExp})`)
 export class StaffController {
-    static isAdmin = (userId: number, hackathonName: string) =>
-        store.existsBy({
-            hackathon: { name: hackathonName },
-            user: { id: userId },
-            type: StaffType.Admin
-        });
-
-    static isJudge = (userId: number, hackathonName: string) =>
-        store.existsBy({
-            hackathon: { name: hackathonName },
-            user: { id: userId },
-            type: StaffType.Judge
-        });
-
-    static async addOne(staff: Omit<Staff, keyof Base>) {
-        const saved = await store.save(staff);
-
-        await ActivityLogController.logCreate(staff.createdBy, 'Staff', saved.id);
-
-        return saved;
-    }
+    service = staffService;
 
     @Put('/:uid')
     @HttpCode(201)
@@ -77,15 +54,9 @@ export class StaffController {
 
         if (createdBy.id === uid) throw new ForbiddenError();
 
-        await HackathonController.ensureAdmin(createdBy.id, name);
+        await hackathonService.ensureAdmin(createdBy.id, name);
 
-        return StaffController.addOne({
-            ...staff,
-            type,
-            user,
-            hackathon,
-            createdBy
-        });
+        return staffService.createOne({ ...staff, type, user, hackathon, createdBy }, createdBy);
     }
 
     @Put('/:uid')
@@ -98,22 +69,15 @@ export class StaffController {
         @Param('uid') uid: number,
         @Body() { description }: Staff
     ) {
-        const staff = await store.findOne({
+        const staff = await this.service.store.findOne({
             where: { hackathon: { name }, type, user: { id: uid } },
             relations: ['hackathon']
         });
         if (!staff) throw new NotFoundError();
 
-        await HackathonController.ensureAdmin(updatedBy.id, name);
+        await hackathonService.ensureAdmin(updatedBy.id, name);
 
-        const saved = await store.save({
-            ...staff,
-            description,
-            updatedBy
-        });
-        await ActivityLogController.logUpdate(updatedBy, 'Staff', staff.id);
-
-        return saved;
+        return this.service.editOne(staff.id, { description }, updatedBy);
     }
 
     @Delete('/:uid')
@@ -125,7 +89,7 @@ export class StaffController {
         @Param('type') type: StaffType,
         @Param('uid') uid: number
     ) {
-        const staff = await store.findOne({
+        const staff = await this.service.store.findOne({
             where: { hackathon: { name }, type, user: { id: uid } },
             relations: ['hackathon']
         });
@@ -133,32 +97,25 @@ export class StaffController {
 
         if (deletedBy.id === uid) throw new ForbiddenError();
 
-        await HackathonController.ensureAdmin(deletedBy.id, name);
+        await hackathonService.ensureAdmin(deletedBy.id, name);
 
-        await store.save({ ...staff, deletedBy });
-        await store.softDelete(staff.id);
-
-        await ActivityLogController.logDelete(deletedBy, 'Staff', staff.id);
+        await this.service.deleteOne(staff.id, deletedBy);
     }
 
     @Get()
     @ResponseSchema(StaffListChunk)
-    async getList(
+    getList(
         @Param('name') name: string,
         @Param('type') type: StaffType,
-        @QueryParams() { keywords, pageSize, pageIndex, user }: StaffFilter
+        @QueryParams() { keywords, user, ...filter }: StaffFilter
     ) {
         const where = searchConditionOf<Staff>(['description'], keywords, {
             hackathon: { name },
             type,
-            user: { id: user }
+            ...(user && { user: { id: user } })
         });
-        const [list, count] = await store.findAndCount({
-            where,
-            relations: ['hackathon', 'user'],
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
+        return this.service.getList({ keywords, ...filter }, where, {
+            relations: ['hackathon', 'user']
         });
-        return { list, count };
     }
 }

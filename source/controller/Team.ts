@@ -27,28 +27,15 @@ import {
     TeamMemberStatus,
     User
 } from '../model';
+import { hackathonService,teamMemberService, teamService } from '../service';
 import { searchConditionOf } from '../utility';
-import { ActivityLogController } from './ActivityLog';
-import { HackathonController } from './Hackathon';
-import { PlatformAdminController } from './PlatformAdmin';
-import { TeamMemberController } from './TeamMember';
 
-const store = dataSource.getRepository(Team),
-    hackathonStore = dataSource.getRepository(Hackathon);
+const hackathonStore = dataSource.getRepository(Hackathon),
+    teamStore = dataSource.getRepository(Team);
 
 @JsonController('/hackathon/:name/team')
 export class TeamController {
-    static async ensureAdmin(userId: number, teamId: number) {
-        if (
-            !(await TeamMemberController.isAdmin(userId, teamId)) &&
-            !(await PlatformAdminController.isAdmin(userId))
-        )
-            throw new ForbiddenError();
-    }
-
-    static async ensureMember(userId: number, teamId: number) {
-        if (!(await TeamMemberController.isMember(userId, teamId))) throw new ForbiddenError();
-    }
+    service = teamService;
 
     @Post()
     @Authorized()
@@ -65,20 +52,18 @@ export class TeamController {
         });
         if (!hackathon) throw new NotFoundError();
 
-        await HackathonController.ensureEnrolled(createdBy.id, name);
+        await hackathonService.ensureEnrolled(createdBy.id, name);
 
-        const same = await store.findOneBy({
+        const same = await teamStore.findOneBy({
             hackathon: { name },
             displayName: team.displayName
         });
 
         if (same) throw new ForbiddenError(`Team ${team.displayName} already exists`);
 
-        const saved = await store.save({ ...team, hackathon, createdBy });
+        const saved = await this.service.createOne({ ...team, hackathon }, createdBy);
 
-        await ActivityLogController.logCreate(createdBy, 'Team', saved.id);
-
-        await TeamMemberController.addOne({
+        await teamMemberService.addOne({
             role: TeamMemberRole.Admin,
             user: createdBy,
             description: 'Team Creator',
@@ -98,65 +83,36 @@ export class TeamController {
         @Param('id') id: number,
         @Body() newData: Team
     ) {
-        const old = await store.findOne({
-            where: { id },
-            relations: ['hackathon', 'createdBy']
-        });
-        if (!old) throw new NotFoundError();
+        await teamService.ensureMember(updatedBy.id, id);
 
-        await TeamController.ensureMember(updatedBy.id, id);
-
-        const saved = await store.save({ ...old, ...newData, updatedBy });
-
-        await ActivityLogController.logUpdate(updatedBy, 'Team', old.id);
-
-        return saved;
+        return this.service.editOne(id, newData, updatedBy);
     }
 
     @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
     async deleteOne(@CurrentUser() deletedBy: User, @Param('id') id: number) {
-        const team = await store.findOne({
-            where: { id },
-            relations: ['hackathon', 'createdBy']
-        });
-        if (!team) throw new NotFoundError();
+        await teamService.ensureAdmin(deletedBy.id, id);
 
-        await TeamController.ensureAdmin(deletedBy.id, id);
-
-        await store.save({ ...team, deletedBy });
-        await store.softDelete(id);
-
-        await ActivityLogController.logDelete(deletedBy, 'Team', team.id);
+        await this.service.deleteOne(id, deletedBy);
     }
 
     @Get('/:id')
     @OnNull(404)
     @ResponseSchema(Team)
     getOne(@Param('id') id: number) {
-        return store.findOne({
-            where: { id },
-            relations: ['createdBy', 'hackathon']
-        });
+        return this.service.getOne(id, ['createdBy', 'hackathon']);
     }
 
     @Get()
     @ResponseSchema(TeamListChunk)
-    async getList(
-        @Param('name') name: string,
-        @QueryParams() { keywords, pageSize, pageIndex }: BaseFilter
-    ) {
+    getList(@Param('name') name: string, @QueryParams() { keywords, ...filter }: BaseFilter) {
         const where = searchConditionOf<Team>(['displayName', 'description'], keywords, {
             hackathon: { name }
         });
-        const [list, count] = await store.findAndCount({
-            where,
+        return this.service.getList({ keywords, ...filter }, where, {
             order: { score: 'DESC', updatedAt: 'DESC' },
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize,
             relations: ['createdBy', 'hackathon']
         });
-        return { list, count };
     }
 }
