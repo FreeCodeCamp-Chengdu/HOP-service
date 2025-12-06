@@ -17,11 +17,18 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { FindOptionsWhere, IsNull, Not } from 'typeorm';
 
-import { BaseFilter, dataSource, Team, TeamWork, TeamWorkFilter, TeamWorkListChunk, TeamWorkType, User } from '../model';
-import { UserServiceWithLog } from '../service';
+import {
+    BaseFilter,
+    dataSource,
+    Team,
+    TeamWork,
+    TeamWorkFilter,
+    TeamWorkListChunk,
+    TeamWorkType,
+    User
+} from '../model';
+import { gitTemplateService, teamService, UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
-import { GitTemplateController } from './GitTemplate';
-import { TeamController } from './Team';
 
 const teamStore = dataSource.getRepository(Team);
 
@@ -39,22 +46,31 @@ export class TeamWorkController {
     @Authorized()
     @HttpCode(201)
     @ResponseSchema(TeamWork)
-    async createOne(@CurrentUser() createdBy: User, @Param('tid') tid: number, @Body() work: TeamWork) {
+    async createOne(
+        @CurrentUser() createdBy: User,
+        @Param('tid') tid: number,
+        @Body() work: TeamWork
+    ) {
         const team = await teamStore.findOne({
             where: { id: tid },
             relations: ['hackathon']
         });
         if (!team) throw new NotFoundError();
 
-        await TeamController.ensureMember(createdBy.id, tid);
+        await teamService.ensureMember(createdBy.id, tid);
 
         const gitRepository =
             work.type === TeamWorkType.Website && work.url.startsWith('https://github.com/')
-                ? await GitTemplateController.getRepository(work.url)
+                ? await gitTemplateService.getRepository(work.url)
                 : undefined;
 
         return this.service.createOne(
-            { ...work, gitRepository: gitRepository as TeamWork['gitRepository'], team, hackathon: team.hackathon },
+            {
+                ...work,
+                gitRepository: gitRepository as TeamWork['gitRepository'],
+                team,
+                hackathon: team.hackathon
+            },
             createdBy
         );
     }
@@ -62,11 +78,15 @@ export class TeamWorkController {
     @Put('/:id')
     @Authorized()
     @ResponseSchema(TeamWork)
-    async updateOne(@CurrentUser() updatedBy: User, @Param('id') id: number, @Body() work: TeamWork) {
+    async updateOne(
+        @CurrentUser() updatedBy: User,
+        @Param('id') id: number,
+        @Body() work: TeamWork
+    ) {
         const old = await this.service.getOne(id, ['team']);
         if (!old) throw new NotFoundError();
 
-        await TeamController.ensureMember(updatedBy.id, old.team.id);
+        await teamService.ensureMember(updatedBy.id, old.team.id);
 
         return this.service.editOne(id, work, updatedBy);
     }
@@ -78,7 +98,7 @@ export class TeamWorkController {
         const old = await this.service.getOne(id, ['team']);
         if (!old) throw new NotFoundError();
 
-        await TeamController.ensureMember(deletedBy.id, old.team.id);
+        await teamService.ensureMember(deletedBy.id, old.team.id);
 
         await this.service.deleteOne(id, deletedBy);
     }

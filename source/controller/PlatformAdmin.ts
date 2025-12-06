@@ -14,18 +14,22 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { BaseFilter, dataSource, PlatformAdmin, PlatformAdminListChunk, Role, User } from '../model';
-import { UserServiceWithLog } from '../service';
+import {
+    BaseFilter,
+    dataSource,
+    PlatformAdmin,
+    PlatformAdminListChunk,
+    Role,
+    User
+} from '../model';
+import { platformAdminService } from '../service';
 import { searchConditionOf } from '../utility';
 
 const userStore = dataSource.getRepository(User);
-const platformAdminService = new UserServiceWithLog(PlatformAdmin, ['description']);
 
 @JsonController('/platform/admin')
 export class PlatformAdminController {
     service = platformAdminService;
-
-    static isAdmin = (uid: number) => platformAdminService.store.existsBy({ user: { id: uid } });
 
     @Put('/:uid')
     @Authorized(Role.Administrator)
@@ -74,6 +78,8 @@ export class PlatformAdminController {
     @ResponseSchema(PlatformAdminListChunk)
     getList(@QueryParams() { keywords, ...filter }: BaseFilter) {
         const where = searchConditionOf<PlatformAdmin>(['description'], keywords);
-        return this.service.getList({ keywords, ...filter }, where, { relations: ['user', 'createdBy'] });
+        return this.service.getList({ keywords, ...filter }, where, {
+            relations: ['user', 'createdBy']
+        });
     }
 }

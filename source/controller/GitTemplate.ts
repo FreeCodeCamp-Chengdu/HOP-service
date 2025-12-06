@@ -22,40 +22,16 @@ import {
     GitTemplate,
     GitTemplateListChunk,
     Hackathon,
-    HackathonBase,
     User
 } from '../model';
-import { UserServiceWithLog } from '../service';
+import { gitTemplateService, hackathonService } from '../service';
 import { searchConditionOf } from '../utility';
-import { HackathonController } from './Hackathon';
 
 const hackathonStore = dataSource.getRepository(Hackathon);
-const repositoryStore = new RepositoryModel();
 
 @JsonController('/hackathon/:name/git-template')
 export class GitTemplateController {
-    service = new UserServiceWithLog(GitTemplate, [
-        'name',
-        'full_name',
-        'html_url',
-        'default_branch',
-        'languages',
-        'topics',
-        'description',
-        'homepage'
-    ]);
-
-    static async getRepository(URI: string): Promise<Omit<GitTemplate, keyof HackathonBase>> {
-        const path = URI.replace(new RegExp(String.raw`^https://github.com/`), 'repos');
-        const repository = await repositoryStore.getOne(path, ['languages']);
-
-        const { name, full_name, html_url, default_branch } = repository,
-            { languages, topics, description, homepage } = repository;
-        return {
-            ...{ name, full_name, html_url, default_branch },
-            ...{ languages, topics, description, homepage }
-        };
-    }
+    service = gitTemplateService;
 
     @Post()
     @Authorized()
@@ -70,9 +46,9 @@ export class GitTemplateController {
 
         if (!hackathon) throw new NotFoundError();
 
-        await HackathonController.ensureAdmin(createdBy.id, name);
+        await hackathonService.ensureAdmin(createdBy.id, name);
 
-        const repository = await GitTemplateController.getRepository(html_url);
+        const repository = await gitTemplateService.getRepository(html_url);
 
         return this.service.createOne({ ...repository, hackathon }, createdBy);
     }
@@ -85,7 +61,7 @@ export class GitTemplateController {
         @Param('name') name: string,
         @Param('id') id: number
     ) {
-        await HackathonController.ensureAdmin(deletedBy.id, name);
+        await hackathonService.ensureAdmin(deletedBy.id, name);
 
         await this.service.deleteOne(id, deletedBy);
     }

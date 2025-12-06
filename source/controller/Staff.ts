@@ -15,37 +15,25 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { Base, dataSource, Hackathon, Staff, StaffFilter, StaffListChunk, StaffType, User } from '../model';
-import { UserServiceWithLog } from '../service';
+import {
+    dataSource,
+    Hackathon,
+    Staff,
+    StaffFilter,
+    StaffListChunk,
+    StaffType,
+    User
+} from '../model';
+import { hackathonService,staffService } from '../service';
 import { searchConditionOf } from '../utility';
-import { HackathonController } from './Hackathon';
 
 const userStore = dataSource.getRepository(User),
     hackathonStore = dataSource.getRepository(Hackathon);
 const StaffTypeRegExp = Object.values(StaffType).join('|');
-const staffService = new UserServiceWithLog(Staff, ['description']);
 
 @JsonController(`/hackathon/:name/:type(${StaffTypeRegExp})`)
 export class StaffController {
     service = staffService;
-
-    static isAdmin = (userId: number, hackathonName: string) =>
-        staffService.store.existsBy({
-            hackathon: { name: hackathonName },
-            user: { id: userId },
-            type: StaffType.Admin
-        });
-
-    static isJudge = (userId: number, hackathonName: string) =>
-        staffService.store.existsBy({
-            hackathon: { name: hackathonName },
-            user: { id: userId },
-            type: StaffType.Judge
-        });
-
-    static async addOne(staff: Omit<Staff, keyof Base>) {
-        return staffService.createOne(staff, staff.createdBy);
-    }
 
     @Put('/:uid')
     @HttpCode(201)
@@ -66,9 +54,9 @@ export class StaffController {
 
         if (createdBy.id === uid) throw new ForbiddenError();
 
-        await HackathonController.ensureAdmin(createdBy.id, name);
+        await hackathonService.ensureAdmin(createdBy.id, name);
 
-        return StaffController.addOne({ ...staff, type, user, hackathon, createdBy });
+        return staffService.createOne({ ...staff, type, user, hackathon, createdBy }, createdBy);
     }
 
     @Put('/:uid')
@@ -87,7 +75,7 @@ export class StaffController {
         });
         if (!staff) throw new NotFoundError();
 
-        await HackathonController.ensureAdmin(updatedBy.id, name);
+        await hackathonService.ensureAdmin(updatedBy.id, name);
 
         return this.service.editOne(staff.id, { description }, updatedBy);
     }
@@ -109,7 +97,7 @@ export class StaffController {
 
         if (deletedBy.id === uid) throw new ForbiddenError();
 
-        await HackathonController.ensureAdmin(deletedBy.id, name);
+        await hackathonService.ensureAdmin(deletedBy.id, name);
 
         await this.service.deleteOne(staff.id, deletedBy);
     }
@@ -126,6 +114,8 @@ export class StaffController {
             type,
             ...(user && { user: { id: user } })
         });
-        return this.service.getList({ keywords, ...filter }, where, { relations: ['hackathon', 'user'] });
+        return this.service.getList({ keywords, ...filter }, where, {
+            relations: ['hackathon', 'user']
+        });
     }
 }

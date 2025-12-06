@@ -23,20 +23,14 @@ import {
     Hackathon,
     User
 } from '../model';
-import { UserServiceWithLog } from '../service';
+import { enrollmentService, hackathonService } from '../service';
 import { searchConditionOf } from '../utility';
-import { HackathonController } from './Hackathon';
 
 const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name/enrollment')
 export class EnrollmentController {
-    service = new UserServiceWithLog(Enrollment, ['form']);
-
-    static isEnrolled = (userId: number, hackathonName: string) =>
-        dataSource
-            .getRepository(Enrollment)
-            .existsBy({ hackathon: { name: hackathonName }, createdBy: { id: userId } });
+    service = enrollmentService;
 
     @Get('/session')
     @Authorized()
@@ -48,11 +42,15 @@ export class EnrollmentController {
     @Put('/:id')
     @Authorized()
     @ResponseSchema(Enrollment)
-    async updateOne(@CurrentUser() updatedBy: User, @Param('id') id: number, @Body() { status }: Enrollment) {
+    async updateOne(
+        @CurrentUser() updatedBy: User,
+        @Param('id') id: number,
+        @Body() { status }: Enrollment
+    ) {
         const old = await this.service.getOne(id, ['hackathon']);
         if (!old) throw new NotFoundError();
 
-        await HackathonController.ensureAdmin(updatedBy.id, old.hackathon.name);
+        await hackathonService.ensureAdmin(updatedBy.id, old.hackathon.name);
 
         return this.service.editOne(id, { status }, updatedBy);
     }
@@ -61,20 +59,29 @@ export class EnrollmentController {
     @Authorized()
     @HttpCode(201)
     @ResponseSchema(Enrollment)
-    async createOne(@CurrentUser() createdBy: User, @Param('name') name: string, @Body() { form }: Enrollment) {
+    async createOne(
+        @CurrentUser() createdBy: User,
+        @Param('name') name: string,
+        @Body() { form }: Enrollment
+    ) {
         const hackathon = await hackathonStore.findOneBy({ name }),
             now = Date.now();
 
         if (!hackathon) throw new NotFoundError();
 
-        if (now < +new Date(hackathon.enrollmentStartedAt) || now > +new Date(hackathon.enrollmentEndedAt))
+        if (
+            now < +new Date(hackathon.enrollmentStartedAt) ||
+            now > +new Date(hackathon.enrollmentEndedAt)
+        )
             throw new ForbiddenError('Not in enrollment period');
 
         return this.service.createOne(
             {
                 hackathon,
                 form,
-                status: hackathon.autoApprove ? EnrollmentStatus.Approved : EnrollmentStatus.PendingApproval
+                status: hackathon.autoApprove
+                    ? EnrollmentStatus.Approved
+                    : EnrollmentStatus.PendingApproval
             },
             createdBy
         );
@@ -82,7 +89,9 @@ export class EnrollmentController {
 
     @Get()
     @ResponseSchema(EnrollmentListChunk)
-    getList(@QueryParams() { keywords, status, createdBy, updatedBy, ...filter }: EnrollmentFilter) {
+    getList(
+        @QueryParams() { keywords, status, createdBy, updatedBy, ...filter }: EnrollmentFilter
+    ) {
         const where = searchConditionOf<Enrollment>(['form'], keywords, {
             ...(status && { status }),
             ...(createdBy && { createdBy: { id: createdBy } }),

@@ -27,43 +27,32 @@ import {
     TeamMemberStatus,
     User
 } from '../model';
-import { UserServiceWithLog } from '../service';
+import { hackathonService,teamMemberService, teamService } from '../service';
 import { searchConditionOf } from '../utility';
-import { HackathonController } from './Hackathon';
-import { PlatformAdminController } from './PlatformAdmin';
-import { TeamMemberController } from './TeamMember';
 
 const hackathonStore = dataSource.getRepository(Hackathon),
     teamStore = dataSource.getRepository(Team);
 
 @JsonController('/hackathon/:name/team')
 export class TeamController {
-    service = new UserServiceWithLog(Team, ['displayName', 'description']);
-
-    static async ensureAdmin(userId: number, teamId: number) {
-        if (
-            !(await TeamMemberController.isAdmin(userId, teamId)) &&
-            !(await PlatformAdminController.isAdmin(userId))
-        )
-            throw new ForbiddenError();
-    }
-
-    static async ensureMember(userId: number, teamId: number) {
-        if (!(await TeamMemberController.isMember(userId, teamId))) throw new ForbiddenError();
-    }
+    service = teamService;
 
     @Post()
     @Authorized()
     @HttpCode(201)
     @ResponseSchema(Team)
-    async createOne(@CurrentUser() createdBy: User, @Param('name') name: string, @Body() team: Team) {
+    async createOne(
+        @CurrentUser() createdBy: User,
+        @Param('name') name: string,
+        @Body() team: Team
+    ) {
         const hackathon = await hackathonStore.findOne({
             where: { name },
             relations: ['createdBy']
         });
         if (!hackathon) throw new NotFoundError();
 
-        await HackathonController.ensureEnrolled(createdBy.id, name);
+        await hackathonService.ensureEnrolled(createdBy.id, name);
 
         const same = await teamStore.findOneBy({
             hackathon: { name },
@@ -74,7 +63,7 @@ export class TeamController {
 
         const saved = await this.service.createOne({ ...team, hackathon }, createdBy);
 
-        await TeamMemberController.addOne({
+        await teamMemberService.addOne({
             role: TeamMemberRole.Admin,
             user: createdBy,
             description: 'Team Creator',
@@ -89,8 +78,12 @@ export class TeamController {
     @Put('/:id')
     @Authorized()
     @ResponseSchema(Team)
-    async updateOne(@CurrentUser() updatedBy: User, @Param('id') id: number, @Body() newData: Team) {
-        await TeamController.ensureMember(updatedBy.id, id);
+    async updateOne(
+        @CurrentUser() updatedBy: User,
+        @Param('id') id: number,
+        @Body() newData: Team
+    ) {
+        await teamService.ensureMember(updatedBy.id, id);
 
         return this.service.editOne(id, newData, updatedBy);
     }
@@ -99,7 +92,7 @@ export class TeamController {
     @Authorized()
     @OnUndefined(204)
     async deleteOne(@CurrentUser() deletedBy: User, @Param('id') id: number) {
-        await TeamController.ensureAdmin(deletedBy.id, id);
+        await teamService.ensureAdmin(deletedBy.id, id);
 
         await this.service.deleteOne(id, deletedBy);
     }
@@ -117,10 +110,9 @@ export class TeamController {
         const where = searchConditionOf<Team>(['displayName', 'description'], keywords, {
             hackathon: { name }
         });
-        return this.service.getList(
-            { keywords, ...filter },
-            where,
-            { order: { score: 'DESC', updatedAt: 'DESC' }, relations: ['createdBy', 'hackathon'] }
-        );
+        return this.service.getList({ keywords, ...filter }, where, {
+            order: { score: 'DESC', updatedAt: 'DESC' },
+            relations: ['createdBy', 'hackathon']
+        });
     }
 }

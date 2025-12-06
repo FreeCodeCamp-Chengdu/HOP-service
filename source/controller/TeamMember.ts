@@ -19,48 +19,22 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 
 import {
-    Base,
     dataSource,
     Team,
     TeamMember,
     TeamMemberFilter,
     TeamMemberListChunk,
-    TeamMemberRole,
-    TeamMemberStatus,
     User
 } from '../model';
-import { UserServiceWithLog } from '../service';
+import { hackathonService, teamMemberService, teamService } from '../service';
 import { searchConditionOf } from '../utility';
-import { HackathonController } from './Hackathon';
-import { TeamController } from './Team';
 
 const userStore = dataSource.getRepository(User),
     teamStore = dataSource.getRepository(Team);
-const teamMemberService = new UserServiceWithLog(TeamMember, ['description']);
 
 @JsonController('/hackathon/:name/team/:id/member')
 export class TeamMemberController {
     service = teamMemberService;
-
-    static isAdmin = (userId: number, teamId: number) =>
-        teamMemberService.store.existsBy({
-            team: { id: teamId },
-            user: { id: userId },
-            role: TeamMemberRole.Admin
-        });
-
-    static isMember = (userId: number, teamId: number) =>
-        teamMemberService.store.existsBy({ user: { id: userId }, team: { id: teamId } });
-
-    static async addOne(member: Omit<TeamMember, keyof Base>) {
-        return teamMemberService.createOne(
-            {
-                status: member.team.autoApprove ? TeamMemberStatus.Approved : TeamMemberStatus.PendingApproval,
-                ...member
-            },
-            member.createdBy
-        );
-    }
 
     @Put('/:uid')
     @Authorized()
@@ -80,9 +54,9 @@ export class TeamMemberController {
 
         if (createdBy.id === uid) throw new ForbiddenError();
 
-        await TeamController.ensureMember(createdBy.id, id);
+        await teamService.ensureMember(createdBy.id, id);
 
-        return TeamMemberController.addOne({
+        return teamMemberService.addOne({
             role,
             user,
             description,
@@ -109,9 +83,9 @@ export class TeamMemberController {
         });
         if (!team) throw new NotFoundError();
 
-        await HackathonController.ensureEnrolled(createdBy.id, name);
+        await hackathonService.ensureEnrolled(createdBy.id, name);
 
-        return TeamMemberController.addOne({
+        return teamMemberService.addOne({
             user: createdBy,
             description,
             team,
@@ -140,8 +114,8 @@ export class TeamMemberController {
         if (isNotEmptyObject(authorization)) {
             if (updatedBy.id === uid) throw new ForbiddenError();
 
-            await TeamController.ensureAdmin(updatedBy.id, id);
-        } else await TeamController.ensureMember(updatedBy.id, id);
+            await teamService.ensureAdmin(updatedBy.id, id);
+        } else await teamService.ensureMember(updatedBy.id, id);
 
         return this.service.editOne(member.id, { ...authorization, description }, updatedBy);
     }
@@ -162,7 +136,7 @@ export class TeamMemberController {
 
         if (deletedBy.id === uid) throw new ForbiddenError();
 
-        await TeamController.ensureMember(deletedBy.id, id);
+        await teamService.ensureAdmin(deletedBy.id, id);
 
         await this.service.deleteOne(member.id, deletedBy);
     }
@@ -192,7 +166,10 @@ export class TeamMemberController {
 
     @Get()
     @ResponseSchema(TeamMemberListChunk)
-    getList(@Param('id') id: number, @QueryParams() { role, status, keywords, ...filter }: TeamMemberFilter) {
+    getList(
+        @Param('id') id: number,
+        @QueryParams() { role, status, keywords, ...filter }: TeamMemberFilter
+    ) {
         const where = searchConditionOf<TeamMember>(['description'], keywords, {
             team: { id },
             ...(role && { role }),

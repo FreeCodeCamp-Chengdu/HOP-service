@@ -26,15 +26,13 @@ import {
     Hackathon,
     User
 } from '../model';
-import { UserServiceWithLog } from '../service';
-import { HackathonController } from './Hackathon';
+import { awardAssignmentService, awardService, hackathonService } from '../service';
 
 const hackathonStore = dataSource.getRepository(Hackathon);
-const awardAssignmentService = new UserServiceWithLog(AwardAssignment);
 
 @JsonController('/hackathon/:name/award')
 export class AwardController {
-    service = new UserServiceWithLog(Award, ['name', 'description']);
+    service = awardService;
 
     @Post()
     @Authorized()
@@ -49,7 +47,7 @@ export class AwardController {
 
         if (!hackathon) throw new NotFoundError(`Hackathon ${name} is not found`);
 
-        await HackathonController.ensureAdmin(createdBy.id, name);
+        await hackathonService.ensureAdmin(createdBy.id, name);
 
         return this.service.createOne({ ...award, hackathon }, createdBy);
     }
@@ -70,7 +68,7 @@ export class AwardController {
         @Param('id') id: number,
         @Body() updateData: Award
     ) {
-        await HackathonController.ensureAdmin(updatedBy.id, name);
+        await hackathonService.ensureAdmin(updatedBy.id, name);
 
         return this.service.editOne(id, updateData, updatedBy);
     }
@@ -83,7 +81,7 @@ export class AwardController {
         @Param('name') name: string,
         @Param('id') id: number
     ) {
-        await HackathonController.ensureAdmin(deletedBy.id, name);
+        await hackathonService.ensureAdmin(deletedBy.id, name);
 
         await this.service.deleteOne(id, deletedBy);
     }
@@ -91,14 +89,18 @@ export class AwardController {
     @Get()
     @ResponseSchema(AwardListChunk)
     getList(@Param('name') name: string, @QueryParams() { ...filter }: BaseFilter) {
-        return this.service.getList(filter, { hackathon: { name } }, { relations: ['createdBy', 'updatedBy'] });
+        return this.service.getList(
+            filter,
+            { hackathon: { name } },
+            { relations: ['createdBy', 'updatedBy'] }
+        );
     }
 }
 
 @JsonController('/hackathon/:name/award/:aid/assignment')
 export class AwardAssignmentController {
     service = awardAssignmentService;
-    awardService = new UserServiceWithLog(Award);
+    awardService = awardService;
 
     @Post()
     @Authorized()
@@ -113,9 +115,12 @@ export class AwardAssignmentController {
         const award = await this.awardService.getOne(aid, ['hackathon']);
         if (!award) throw new NotFoundError(`Award "${aid}" is not found`);
 
-        await HackathonController.ensureAdmin(currentUser.id, name);
+        await hackathonService.ensureAdmin(currentUser.id, name);
 
-        return this.service.createOne({ ...assignment, hackathon: award.hackathon, award }, currentUser);
+        return this.service.createOne(
+            { ...assignment, hackathon: award.hackathon, award },
+            currentUser
+        );
     }
 
     @Put('/:id')
@@ -127,23 +132,15 @@ export class AwardAssignmentController {
         @Param('id') id: number,
         @Body() newData: AwardAssignment
     ) {
-        await HackathonController.ensureAdmin(currentUser.id, name);
+        await hackathonService.ensureAdmin(currentUser.id, name);
 
         return this.service.editOne(id, newData, currentUser);
-    }
-
-    static getList(dimension: keyof AwardAssignment, id: number, pageSize: number, pageIndex: number) {
-        return awardAssignmentService.getList(
-            { pageSize, pageIndex },
-            { [dimension]: { id } },
-            { relations: ['createdBy', 'updatedBy', 'award', 'user', 'team'] }
-        );
     }
 
     @Get()
     @ResponseSchema(AwardAssignmentListChunk)
     getList(@Param('aid') aid: number, @QueryParams() { pageSize, pageIndex }: BaseFilter) {
-        return AwardAssignmentController.getList('award', aid, pageSize, pageIndex);
+        return awardAssignmentService.getListByDimension('award', aid, pageSize, pageIndex);
     }
 }
 
@@ -152,6 +149,6 @@ export class TeamAwardAssignmentController {
     @Get()
     @ResponseSchema(AwardAssignmentListChunk)
     getList(@Param('id') id: number, @QueryParams() { pageSize, pageIndex }: BaseFilter) {
-        return AwardAssignmentController.getList('team', id, pageSize, pageIndex);
+        return awardAssignmentService.getListByDimension('team', id, pageSize, pageIndex);
     }
 }
