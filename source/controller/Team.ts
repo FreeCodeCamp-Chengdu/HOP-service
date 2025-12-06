@@ -7,7 +7,6 @@ import {
     Get,
     HttpCode,
     JsonController,
-    NotFoundError,
     OnNull,
     OnUndefined,
     Param,
@@ -17,21 +16,9 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    BaseFilter,
-    dataSource,
-    Hackathon,
-    Team,
-    TeamListChunk,
-    TeamMemberRole,
-    TeamMemberStatus,
-    User
-} from '../model';
-import { hackathonService,teamMemberService, teamService } from '../service';
+import { BaseFilter, Team, TeamListChunk, TeamMemberRole, TeamMemberStatus, User } from '../model';
+import { hackathonService, teamMemberService, teamService } from '../service';
 import { searchConditionOf } from '../utility';
-
-const hackathonStore = dataSource.getRepository(Hackathon),
-    teamStore = dataSource.getRepository(Team);
 
 @JsonController('/hackathon/:name/team')
 export class TeamController {
@@ -46,15 +33,9 @@ export class TeamController {
         @Param('name') name: string,
         @Body() team: Team
     ) {
-        const hackathon = await hackathonStore.findOne({
-            where: { name },
-            relations: ['createdBy']
-        });
-        if (!hackathon) throw new NotFoundError();
+        const hackathon = await hackathonService.ensureEnrolled(createdBy.id, name);
 
-        await hackathonService.ensureEnrolled(createdBy.id, name);
-
-        const same = await teamStore.findOneBy({
+        const same = await this.service.store.findOneBy({
             hackathon: { name },
             displayName: team.displayName
         });

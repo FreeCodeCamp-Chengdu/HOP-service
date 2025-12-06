@@ -6,7 +6,6 @@ import {
     Get,
     HttpCode,
     JsonController,
-    NotFoundError,
     OnUndefined,
     Param,
     Post,
@@ -15,21 +14,13 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    dataSource,
-    Hackathon,
-    Organizer,
-    OrganizerFilter,
-    OrganizerListChunk,
-    User
-} from '../model';
+import { Organizer, OrganizerFilter, OrganizerListChunk, User } from '../model';
 import { hackathonService, UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
 
 @JsonController('/hackathon/:name/organizer')
 export class OrganizerController {
     service = new UserServiceWithLog(Organizer, ['name', 'description', 'url']);
-    hackathonStore = dataSource.getRepository(Hackathon);
 
     @Post()
     @Authorized()
@@ -40,13 +31,7 @@ export class OrganizerController {
         @Param('name') name: string,
         @Body() organizer: Organizer
     ) {
-        const hackathon = await this.hackathonStore.findOne({
-            where: { name },
-            relations: ['createdBy']
-        });
-        if (!hackathon) throw new NotFoundError();
-
-        await hackathonService.ensureAdmin(createdBy.id, name);
+        const hackathon = await hackathonService.ensureAdmin(createdBy.id, name);
 
         return this.service.createOne({ ...organizer, hackathon }, createdBy);
     }

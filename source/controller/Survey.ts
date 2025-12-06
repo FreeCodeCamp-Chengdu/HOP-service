@@ -4,17 +4,14 @@ import {
     CurrentUser,
     Get,
     JsonController,
-    NotFoundError,
     OnNull,
     Param,
     Put
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { dataSource, Hackathon, Questionnaire, Standard, User } from '../model';
+import { Questionnaire, Standard, User } from '../model';
 import { hackathonService, UserServiceWithLog } from '../service';
-
-const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name')
 export class SurveyController {
@@ -36,11 +33,7 @@ export class SurveyController {
         @Param('name') name: string,
         @Body() form: Questionnaire
     ) {
-        const hackathon = await hackathonStore.findOneBy({ name });
-
-        if (!hackathon) throw new NotFoundError();
-
-        await hackathonService.ensureAdmin(user.id, name);
+        const hackathon = await hackathonService.ensureAdmin(user.id, name);
 
         const old = await this.getQuestionnaire(name);
 
@@ -64,11 +57,7 @@ export class SurveyController {
         @Param('name') name: string,
         @Body() form: Standard
     ) {
-        const hackathon = await hackathonStore.findOneBy({ name });
-
-        if (!hackathon) throw new NotFoundError();
-
-        await hackathonService.ensureAdmin(user.id, name);
+        const hackathon = await hackathonService.ensureAdmin(user.id, name);
 
         const old = await this.getStandard(name);
 

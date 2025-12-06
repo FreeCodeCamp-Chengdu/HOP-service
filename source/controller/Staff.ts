@@ -15,25 +15,16 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    dataSource,
-    Hackathon,
-    Staff,
-    StaffFilter,
-    StaffListChunk,
-    StaffType,
-    User
-} from '../model';
-import { hackathonService,staffService } from '../service';
+import { Staff, StaffFilter, StaffListChunk, StaffType, User } from '../model';
+import { hackathonService, sessionService, staffService } from '../service';
 import { searchConditionOf } from '../utility';
 
-const userStore = dataSource.getRepository(User),
-    hackathonStore = dataSource.getRepository(Hackathon);
 const StaffTypeRegExp = Object.values(StaffType).join('|');
 
 @JsonController(`/hackathon/:name/:type(${StaffTypeRegExp})`)
 export class StaffController {
     service = staffService;
+    userStore = sessionService.userStore;
 
     @Put('/:uid')
     @HttpCode(201)
@@ -47,8 +38,8 @@ export class StaffController {
         @Body() staff: Staff
     ) {
         const [user, hackathon] = await Promise.all([
-            userStore.findOneBy({ id: uid }),
-            hackathonStore.findOneBy({ name })
+            this.userStore.findOneBy({ id: uid }),
+            hackathonService.store.findOneBy({ name })
         ]);
         if (!user || !hackathon || !StaffType[type]) throw new NotFoundError();
 

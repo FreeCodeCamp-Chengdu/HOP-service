@@ -18,23 +18,14 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    dataSource,
-    Team,
-    TeamMember,
-    TeamMemberFilter,
-    TeamMemberListChunk,
-    User
-} from '../model';
-import { hackathonService, teamMemberService, teamService } from '../service';
+import { TeamMember, TeamMemberFilter, TeamMemberListChunk, User } from '../model';
+import { hackathonService, sessionService, teamMemberService, teamService } from '../service';
 import { searchConditionOf } from '../utility';
-
-const userStore = dataSource.getRepository(User),
-    teamStore = dataSource.getRepository(Team);
 
 @JsonController('/hackathon/:name/team/:id/member')
 export class TeamMemberController {
     service = teamMemberService;
+    userStore = sessionService.userStore;
 
     @Put('/:uid')
     @Authorized()
@@ -47,8 +38,8 @@ export class TeamMemberController {
         @Body() { role, description, status }: TeamMember
     ) {
         const [user, team] = await Promise.all([
-            userStore.findOneBy({ id: uid }),
-            teamStore.findOne({ where: { id }, relations: ['hackathon'] })
+            this.userStore.findOneBy({ id: uid }),
+            teamService.store.findOne({ where: { id }, relations: ['hackathon'] })
         ]);
         if (!user || !team) throw new NotFoundError();
 
@@ -77,7 +68,7 @@ export class TeamMemberController {
         @Param('id') id: number,
         @Body() { description }: TeamMember
     ) {
-        const team = await teamStore.findOne({
+        const team = await teamService.store.findOne({
             where: { id },
             relations: ['hackathon']
         });

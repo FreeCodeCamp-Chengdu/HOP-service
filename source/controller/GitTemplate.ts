@@ -1,4 +1,3 @@
-import { RepositoryModel } from 'mobx-github';
 import {
     Authorized,
     Body,
@@ -7,7 +6,6 @@ import {
     Get,
     HttpCode,
     JsonController,
-    NotFoundError,
     OnNull,
     OnUndefined,
     Param,
@@ -16,18 +14,9 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    BaseFilter,
-    dataSource,
-    GitTemplate,
-    GitTemplateListChunk,
-    Hackathon,
-    User
-} from '../model';
+import { BaseFilter, GitTemplate, GitTemplateListChunk, User } from '../model';
 import { gitTemplateService, hackathonService } from '../service';
 import { searchConditionOf } from '../utility';
-
-const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name/git-template')
 export class GitTemplateController {
@@ -42,11 +31,7 @@ export class GitTemplateController {
         @Param('name') name: string,
         @Body() { html_url }: GitTemplate
     ) {
-        const hackathon = await hackathonStore.findOneBy({ name });
-
-        if (!hackathon) throw new NotFoundError();
-
-        await hackathonService.ensureAdmin(createdBy.id, name);
+        const hackathon = await hackathonService.ensureAdmin(createdBy.id, name);
 
         const repository = await gitTemplateService.getRepository(html_url);
 

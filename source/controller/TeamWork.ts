@@ -19,8 +19,6 @@ import { FindOptionsWhere, IsNull, Not } from 'typeorm';
 
 import {
     BaseFilter,
-    dataSource,
-    Team,
     TeamWork,
     TeamWorkFilter,
     TeamWorkListChunk,
@@ -29,8 +27,6 @@ import {
 } from '../model';
 import { gitTemplateService, teamService, UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
-
-const teamStore = dataSource.getRepository(Team);
 
 @JsonController('/hackathon/:name/team/:tid/work')
 export class TeamWorkController {
@@ -51,7 +47,7 @@ export class TeamWorkController {
         @Param('tid') tid: number,
         @Body() work: TeamWork
     ) {
-        const team = await teamStore.findOne({
+        const team = await teamService.store.findOne({
             where: { id: tid },
             relations: ['hackathon']
         });

@@ -15,18 +15,14 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 
 import {
-    dataSource,
     Enrollment,
     EnrollmentFilter,
     EnrollmentListChunk,
     EnrollmentStatus,
-    Hackathon,
     User
 } from '../model';
 import { enrollmentService, hackathonService } from '../service';
 import { searchConditionOf } from '../utility';
-
-const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name/enrollment')
 export class EnrollmentController {
@@ -64,7 +60,7 @@ export class EnrollmentController {
         @Param('name') name: string,
         @Body() { form }: Enrollment
     ) {
-        const hackathon = await hackathonStore.findOneBy({ name }),
+        const hackathon = await hackathonService.store.findOneBy({ name }),
             now = Date.now();
 
         if (!hackathon) throw new NotFoundError();

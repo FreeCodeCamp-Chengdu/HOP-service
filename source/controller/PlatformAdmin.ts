@@ -14,22 +14,14 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    BaseFilter,
-    dataSource,
-    PlatformAdmin,
-    PlatformAdminListChunk,
-    Role,
-    User
-} from '../model';
-import { platformAdminService } from '../service';
+import { BaseFilter, PlatformAdmin, PlatformAdminListChunk, Role, User } from '../model';
+import { platformAdminService, sessionService } from '../service';
 import { searchConditionOf } from '../utility';
-
-const userStore = dataSource.getRepository(User);
 
 @JsonController('/platform/admin')
 export class PlatformAdminController {
     service = platformAdminService;
+    userStore = sessionService.userStore;
 
     @Put('/:uid')
     @Authorized(Role.Administrator)
@@ -40,7 +32,7 @@ export class PlatformAdminController {
         @Param('uid') uid: number,
         @Body() { description }: PlatformAdmin
     ) {
-        const user = await userStore.findOneBy({ id: uid });
+        const user = await this.userStore.findOneBy({ id: uid });
 
         if (!user) throw new NotFoundError();
 
@@ -50,7 +42,7 @@ export class PlatformAdminController {
 
         user.roles.push(Role.Administrator);
 
-        await userStore.save(user);
+        await this.userStore.save(user);
 
         return this.service.createOne({ user, description }, createdBy);
     }
@@ -59,7 +51,7 @@ export class PlatformAdminController {
     @Authorized(Role.Administrator)
     @OnUndefined(204)
     async deleteOne(@CurrentUser() deletedBy: User, @Param('uid') uid: number) {
-        const user = await userStore.findOneBy({ id: uid });
+        const user = await this.userStore.findOneBy({ id: uid });
 
         if (!user) throw new NotFoundError();
 
@@ -69,7 +61,7 @@ export class PlatformAdminController {
 
         user.roles = user.roles.filter(role => role !== Role.Administrator);
 
-        await userStore.save(user);
+        await this.userStore.save(user);
 
         await this.service.deleteOne(admin.id, deletedBy);
     }

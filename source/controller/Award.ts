@@ -22,13 +22,9 @@ import {
     AwardAssignmentListChunk,
     AwardListChunk,
     BaseFilter,
-    dataSource,
-    Hackathon,
     User
 } from '../model';
 import { awardAssignmentService, awardService, hackathonService } from '../service';
-
-const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name/award')
 export class AwardController {
@@ -43,11 +39,7 @@ export class AwardController {
         @Param('name') name: string,
         @Body() award: Award
     ) {
-        const hackathon = await hackathonStore.findOneBy({ name });
-
-        if (!hackathon) throw new NotFoundError(`Hackathon ${name} is not found`);
-
-        await hackathonService.ensureAdmin(createdBy.id, name);
+        const hackathon = await hackathonService.ensureAdmin(createdBy.id, name);
 
         return this.service.createOne({ ...award, hackathon }, createdBy);
     }
@@ -100,7 +92,6 @@ export class AwardController {
 @JsonController('/hackathon/:name/award/:aid/assignment')
 export class AwardAssignmentController {
     service = awardAssignmentService;
-    awardService = awardService;
 
     @Post()
     @Authorized()
@@ -112,7 +103,8 @@ export class AwardAssignmentController {
         @Param('aid') aid: number,
         @Body() assignment: AwardAssignment
     ) {
-        const award = await this.awardService.getOne(aid, ['hackathon']);
+        const award = await awardService.getOne(aid, ['hackathon']);
+
         if (!award) throw new NotFoundError(`Award "${aid}" is not found`);
 
         await hackathonService.ensureAdmin(currentUser.id, name);
@@ -140,7 +132,7 @@ export class AwardAssignmentController {
     @Get()
     @ResponseSchema(AwardAssignmentListChunk)
     getList(@Param('aid') aid: number, @QueryParams() { pageSize, pageIndex }: BaseFilter) {
-        return awardAssignmentService.getListByDimension('award', aid, pageSize, pageIndex);
+        return this.service.getListByDimension('award', aid, pageSize, pageIndex);
     }
 }
 

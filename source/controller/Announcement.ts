@@ -6,7 +6,6 @@ import {
     Get,
     HttpCode,
     JsonController,
-    NotFoundError,
     OnNull,
     OnUndefined,
     Param,
@@ -16,18 +15,9 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import {
-    Announcement,
-    AnnouncementListChunk,
-    BaseFilter,
-    dataSource,
-    Hackathon,
-    User
-} from '../model';
+import { Announcement, AnnouncementListChunk, BaseFilter, User } from '../model';
 import { hackathonService, UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
-
-const hackathonStore = dataSource.getRepository(Hackathon);
 
 @JsonController('/hackathon/:name/announcement')
 export class AnnouncementController {
@@ -42,11 +32,7 @@ export class AnnouncementController {
         @Param('name') name: string,
         @Body() announcement: Announcement
     ) {
-        const hackathon = await hackathonStore.findOneBy({ name });
-
-        if (!hackathon) throw new NotFoundError();
-
-        await hackathonService.ensureAdmin(createdBy.id, name);
+        const hackathon = await hackathonService.ensureAdmin(createdBy.id, name);
 
         return this.service.createOne({ ...announcement, hackathon }, createdBy);
     }

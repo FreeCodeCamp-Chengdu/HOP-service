@@ -18,7 +18,6 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 
 import { Role, SignInData, User, UserFilter, UserListChunk } from '../model';
 import { activityLogService, BaseService, sessionService } from '../service';
-import { searchConditionOf } from '../utility';
 
 @JsonController('/user')
 export class UserController {
@@ -63,14 +62,14 @@ export class UserController {
         if (!updatedBy.roles.includes(Role.Administrator) && id !== updatedBy.id)
             throw new ForbiddenError();
 
-        const saved = await this.store.save({
+        await this.store.save({
             ...data,
             password: password && sessionService.encrypt(password),
             id
         });
         await activityLogService.logUpdate(updatedBy, 'User', id);
 
-        return sessionService.sign(saved);
+        return sessionService.sign(await this.store.findOneBy({ id }));
     }
 
     @Get('/:id')

@@ -14,19 +14,9 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { groupBy, sum } from 'web-utility';
 
-import {
-    BaseFilter,
-    dataSource,
-    Evaluation,
-    EvaluationListChunk,
-    Score,
-    Team,
-    User
-} from '../model';
-import { UserServiceWithLog } from '../service';
+import { BaseFilter, Evaluation, EvaluationListChunk, Score, User } from '../model';
+import { teamService, UserServiceWithLog } from '../service';
 import { searchConditionOf } from '../utility';
-
-const teamStore = dataSource.getRepository(Team);
 
 @JsonController('/hackathon/:name/team/:tid/evaluation')
 export class EvaluationController {
@@ -38,11 +28,10 @@ export class EvaluationController {
     @ResponseSchema(Evaluation)
     async createOne(
         @CurrentUser() createdBy: User,
-        @Param('name') name: string,
         @Param('tid') tid: number,
         @Body() evaluation: Evaluation
     ) {
-        const team = await teamStore.findOne({
+        const team = await teamService.store.findOne({
             where: { id: tid },
             relations: ['hackathon']
         });
@@ -57,7 +46,6 @@ export class EvaluationController {
             { ...evaluation, team, hackathon: team.hackathon },
             createdBy
         );
-
         const allScores = (await this.service.store.findBy({ team: { id: tid } }))
             .map(({ scores }) => scores)
             .flat();
@@ -71,7 +59,7 @@ export class EvaluationController {
         );
         const score = sum(...scores.map(({ score }) => score));
 
-        await teamStore.save({ ...team, scores, score });
+        await teamService.store.save({ ...team, scores, score });
 
         return saved;
     }

@@ -38,31 +38,31 @@ export class Hackathon extends UserBase {
     @Matches(/^[\w-]+$/)
     @Column()
     @Index({ unique: true })
-    name: string;
+    name: string = 'test';
 
     @IsString()
     @Column({ unique: true })
-    displayName: string;
+    displayName: string = '';
 
     @IsString()
     @Column()
-    ribbon: string;
+    ribbon: string = '';
 
     @IsString({ each: true })
     @Column('simple-json')
-    tags: string[];
+    tags: string[] = [];
 
     @IsString()
     @Column()
-    summary: string;
+    summary: string = '';
 
     @IsString()
     @Column('text')
-    detail: string;
+    detail: string = '';
 
     @IsString()
     @Column()
-    location: string;
+    location: string = '';
 
     @Type(() => Media)
     @Transform(({ value }) =>
@@ -72,7 +72,7 @@ export class Hackathon extends UserBase {
     )
     @ValidateNested({ each: true })
     @Column('simple-json')
-    banners: Media[];
+    banners: Media[] = [];
 
     @IsEnum(HackathonStatus)
     @IsOptional()
@@ -106,31 +106,31 @@ export class Hackathon extends UserBase {
         query: alias =>
             `SELECT COUNT(*) FROM "enrollment" WHERE "enrollment"."hackathonId" = ${alias}.id`
     })
-    enrollment: number;
+    enrollment: number = 0;
 
     @IsDateString()
     @Column('date')
-    eventStartedAt: string;
+    eventStartedAt: string = new Date().toJSON();
 
     @IsDateString()
     @Column('date')
-    eventEndedAt: string;
+    eventEndedAt: string = new Date().toJSON();
 
     @IsDateString()
     @Column('date')
-    enrollmentStartedAt: string;
+    enrollmentStartedAt: string = new Date().toJSON();
 
     @IsDateString()
     @Column('date')
-    enrollmentEndedAt: string;
+    enrollmentEndedAt: string = new Date().toJSON();
 
     @IsDateString()
     @Column('date')
-    judgeStartedAt: string;
+    judgeStartedAt: string = new Date().toJSON();
 
     @IsDateString()
     @Column('date')
-    judgeEndedAt: string;
+    judgeEndedAt: string = new Date().toJSON();
 
     @Type(() => HackathonSessionRole)
     @ValidateNested()
@@ -147,10 +147,7 @@ export abstract class HackathonBase extends UserBase {
     hackathon: Hackathon;
 }
 
-export class HackathonFilter
-    extends UserBaseFilter
-    implements Partial<UserInputData<Hackathon>>
-{
+export class HackathonFilter extends UserBaseFilter implements Partial<UserInputData<Hackathon>> {
     @IsEnum(HackathonStatus)
     @IsOptional()
     status?: HackathonStatus;
