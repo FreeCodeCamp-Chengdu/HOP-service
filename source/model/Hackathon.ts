@@ -170,3 +170,9 @@ export class HackathonListChunk implements ListChunk<Hackathon> {
     @ValidateNested({ each: true })
     list: Hackathon[];
 }
+
+export enum UserHackathonType {
+    Creator = 'creator',
+    Staff = 'staff',
+    Enrollee = 'enrollee'
+}
