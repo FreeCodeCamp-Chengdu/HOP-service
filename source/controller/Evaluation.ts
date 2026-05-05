@@ -1,3 +1,4 @@
+import { escape as escapeHTML } from 'html-escaper';
 import {
     Authorized,
     Body,
@@ -16,7 +17,7 @@ import { groupBy, sum } from 'web-utility';
 
 import { BaseFilter, Evaluation, EvaluationListChunk, Score, User } from '../model';
 import { emailService, teamService, UserServiceWithLog } from '../service';
-import { escapeHTML, interpolateURL, searchConditionOf, TEAM_FRONTEND_URL } from '../utility';
+import { interpolateURL, searchConditionOf, TEAM_FRONTEND_URL } from '../utility';
 
 @JsonController('/hackathon/:name/team/:tid/evaluation')
 export class EvaluationController {

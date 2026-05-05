@@ -33,8 +33,6 @@ export const {
 export const interpolateURL = (template: string, params: Record<string, string | number>) =>
     template.replace(/:([^/]+)/g, (match, key) => (key in params ? String(params[key]) : match));
 
-export { escape as escapeHTML } from 'html-escaper';
-
 export type NoEmptyFields<T> = {
     [K in keyof T as T[K] extends null | undefined | '' | [] ? never : K]: T[K];
 };

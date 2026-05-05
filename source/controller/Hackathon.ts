@@ -1,3 +1,4 @@
+import { escape as escapeHTML } from 'html-escaper';
 import {
     Authorized,
     Body,
@@ -22,17 +23,12 @@ import {
     HackathonFilter,
     HackathonListChunk,
     HackathonStatus,
+    Role,
     StaffType,
     User
 } from '../model';
-import {
-    emailService,
-    enrollmentService,
-    hackathonService,
-    platformAdminService,
-    staffService
-} from '../service';
-import { ADMIN_FRONTEND_URL, escapeHTML, HACKATHON_ADMIN_URL, interpolateURL } from '../utility';
+import { emailService, enrollmentService, hackathonService, staffService } from '../service';
+import { ADMIN_FRONTEND_URL, HACKATHON_ADMIN_URL, interpolateURL } from '../utility';
 
 @JsonController('/hackathon')
 export class HackathonController {
@@ -82,11 +78,7 @@ export class HackathonController {
         if (hackathon.status !== HackathonStatus.Online) {
             if (!user) throw new ForbiddenError();
 
-            const uid = user.id;
-            const isStaff = await staffService.store.existsBy({ hackathon: { name }, user: { id: uid } });
-            const isPlatformAdmin = await platformAdminService.isAdmin(uid);
-
-            if (!isStaff && !isPlatformAdmin) throw new ForbiddenError();
+            await hackathonService.ensureAdmin(user.id, name);
         }
 
         if (user) {
@@ -145,7 +137,7 @@ export class HackathonController {
     @Get()
     @ResponseSchema(HackathonListChunk)
     async getList(@CurrentUser({ required: false }) user: User, @QueryParams() filter: HackathonFilter) {
-        const isAdmin = user && (await platformAdminService.isAdmin(user.id));
+        const isAdmin = user?.roles?.includes(Role.Administrator) ?? false;
 
         if (!isAdmin) filter.status = HackathonStatus.Online;
 

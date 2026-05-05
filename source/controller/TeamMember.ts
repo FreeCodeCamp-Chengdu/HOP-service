@@ -1,3 +1,4 @@
+import { escape as escapeHTML } from 'html-escaper';
 import { isNotEmptyObject } from 'class-validator';
 import {
     Authorized,
@@ -26,7 +27,7 @@ import {
     teamMemberService,
     teamService
 } from '../service';
-import { escapeHTML, interpolateURL, searchConditionOf, TEAM_ADMIN_URL } from '../utility';
+import { interpolateURL, searchConditionOf, TEAM_ADMIN_URL } from '../utility';
 
 @JsonController('/hackathon/:name/team/:id/member')
 export class TeamMemberController {
