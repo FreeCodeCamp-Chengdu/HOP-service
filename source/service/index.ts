@@ -1,6 +1,7 @@
 export * from './ActivityLog';
 export * from './Award';
 export * from './Base';
+export * from './Email';
 export * from './Enrollment';
 export * from './GitTemplate';
 export * from './Hackathon';

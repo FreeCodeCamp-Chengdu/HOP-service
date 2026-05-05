@@ -18,9 +18,15 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { TeamMember, TeamMemberFilter, TeamMemberListChunk, User } from '../model';
-import { hackathonService, sessionService, teamMemberService, teamService } from '../service';
-import { searchConditionOf } from '../utility';
+import { TeamMember, TeamMemberFilter, TeamMemberListChunk, TeamMemberRole, User } from '../model';
+import {
+    emailService,
+    hackathonService,
+    sessionService,
+    teamMemberService,
+    teamService
+} from '../service';
+import { escapeHTML, interpolateURL, searchConditionOf, TEAM_ADMIN_URL } from '../utility';
 
 @JsonController('/hackathon/:name/team/:id/member')
 export class TeamMemberController {
@@ -76,13 +82,24 @@ export class TeamMemberController {
 
         await hackathonService.ensureEnrolled(createdBy.id, name);
 
-        return teamMemberService.addOne({
+        const member = await teamMemberService.addOne({
             user: createdBy,
             description,
             team,
             hackathon: team.hackathon,
             createdBy
         });
+
+        if (TEAM_ADMIN_URL)
+            await emailService.sendToTeamMembers(
+                id,
+                TeamMemberRole.Admin,
+                `New Team Join Request`,
+                `<p><strong>${escapeHTML(createdBy.name)}</strong> has applied to join your team.</p>` +
+                    `<p><a href="${escapeHTML(interpolateURL(TEAM_ADMIN_URL, { name, id }))}">View Team</a></p>`
+            );
+
+        return member;
     }
 
     @Put('/:uid')

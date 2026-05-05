@@ -17,7 +17,8 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 
 import { Hackathon, HackathonFilter, HackathonListChunk, StaffType, User } from '../model';
-import { enrollmentService, hackathonService, staffService } from '../service';
+import { emailService, enrollmentService, hackathonService, staffService } from '../service';
+import { ADMIN_FRONTEND_URL, escapeHTML, HACKATHON_ADMIN_URL, interpolateURL } from '../utility';
 
 @JsonController('/hackathon')
 export class HackathonController {
@@ -40,7 +41,17 @@ export class HackathonController {
 
         await hackathonService.ensureAdmin(updatedBy.id, name);
 
-        return this.service.editOne(old.id, newData, updatedBy);
+        const updated = await this.service.editOne(old.id, newData, updatedBy);
+
+        if (newData.status && newData.status !== old.status && HACKATHON_ADMIN_URL)
+            await emailService.sendToHackathonStaff(
+                name,
+                `Hackathon Status Updated: ${old.displayName}`,
+                `<p>The hackathon <strong>${escapeHTML(old.displayName)}</strong> status has been updated to <strong>${escapeHTML(newData.status)}</strong>.</p>` +
+                    `<p><a href="${escapeHTML(interpolateURL(HACKATHON_ADMIN_URL, { name }))}">View Hackathon</a></p>`
+            );
+
+        return updated;
     }
 
     @Get('/:name')
@@ -94,6 +105,14 @@ export class HackathonController {
             },
             createdBy
         );
+
+        if (ADMIN_FRONTEND_URL)
+            await emailService.sendToPlatformAdmins(
+                `New Hackathon Needs Review: ${saved.displayName}`,
+                `<p>A new hackathon <strong>${escapeHTML(saved.displayName)}</strong> has been created and is awaiting your review.</p>` +
+                    `<p><a href="${escapeHTML(interpolateURL(ADMIN_FRONTEND_URL, { name: saved.name }))}">Review Hackathon</a></p>`
+            );
+
         return saved;
     }
 

@@ -15,8 +15,8 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 import { groupBy, sum } from 'web-utility';
 
 import { BaseFilter, Evaluation, EvaluationListChunk, Score, User } from '../model';
-import { teamService, UserServiceWithLog } from '../service';
-import { searchConditionOf } from '../utility';
+import { emailService, teamService, UserServiceWithLog } from '../service';
+import { escapeHTML, interpolateURL, searchConditionOf, TEAM_FRONTEND_URL } from '../utility';
 
 @JsonController('/hackathon/:name/team/:tid/evaluation')
 export class EvaluationController {
@@ -28,6 +28,7 @@ export class EvaluationController {
     @ResponseSchema(Evaluation)
     async createOne(
         @CurrentUser() createdBy: User,
+        @Param('name') name: string,
         @Param('tid') tid: number,
         @Body() evaluation: Evaluation
     ) {
@@ -60,6 +61,19 @@ export class EvaluationController {
         const score = sum(...scores.map(({ score }) => score));
 
         await teamService.store.save({ ...team, scores, score });
+
+        if (TEAM_FRONTEND_URL) {
+            const url = escapeHTML(interpolateURL(TEAM_FRONTEND_URL, { name, tid }));
+            const subject = `New Evaluation Submitted for Your Team`;
+            const html =
+                `<p>A new evaluation has been submitted for your team.</p>` +
+                `<p><a href="${url}">View Team</a></p>`;
+
+            await Promise.all([
+                emailService.sendToTeamMembers(tid, undefined, subject, html),
+                emailService.sendToHackathonStaff(name, subject, html)
+            ]);
+        }
 
         return saved;
     }
