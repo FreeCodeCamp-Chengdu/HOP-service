@@ -20,6 +20,7 @@
         "core-js": "^3.49.0",
         "cross-env": "^10.1.0",
         "dotenv": "^17.4.2",
+        "html-escaper": "^3.0.3",
         "jsonwebtoken": "^9.0.3",
         "koa": "^3.2.0",
         "koa-bodyparser": "^4.4.1",
@@ -44,6 +45,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^10.0.1",
+        "@types/html-escaper": "^3.0.4",
         "@types/jest": "^29.5.14",
         "@types/jsonwebtoken": "^9.0.10",
         "@types/koa": "^3.0.2",

@@ -3,6 +3,7 @@ import {
     Body,
     CurrentUser,
     Delete,
+    ForbiddenError,
     Get,
     HttpCode,
     JsonController,
@@ -16,8 +17,21 @@ import {
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { Hackathon, HackathonFilter, HackathonListChunk, StaffType, User } from '../model';
-import { emailService, enrollmentService, hackathonService, staffService } from '../service';
+import {
+    Hackathon,
+    HackathonFilter,
+    HackathonListChunk,
+    HackathonStatus,
+    StaffType,
+    User
+} from '../model';
+import {
+    emailService,
+    enrollmentService,
+    hackathonService,
+    platformAdminService,
+    staffService
+} from '../service';
 import { ADMIN_FRONTEND_URL, escapeHTML, HACKATHON_ADMIN_URL, interpolateURL } from '../utility';
 
 @JsonController('/hackathon')
@@ -57,13 +71,25 @@ export class HackathonController {
     @Get('/:name')
     @ResponseSchema(Hackathon)
     @OnNull(404)
-    async getOne(@CurrentUser() user: User, @Param('name') name: string) {
+    async getOne(@CurrentUser({ required: false }) user: User, @Param('name') name: string) {
         const hackathon = await this.store.findOne({
             where: { name },
             relations: ['createdBy']
         });
 
-        if (user && hackathon) {
+        if (!hackathon) return null;
+
+        if (hackathon.status !== HackathonStatus.Online) {
+            if (!user) throw new ForbiddenError();
+
+            const uid = user.id;
+            const isStaff = await staffService.store.existsBy({ hackathon: { name }, user: { id: uid } });
+            const isPlatformAdmin = await platformAdminService.isAdmin(uid);
+
+            if (!isStaff && !isPlatformAdmin) throw new ForbiddenError();
+        }
+
+        if (user) {
             const uid = user.id;
 
             hackathon.roles = {
@@ -118,7 +144,11 @@ export class HackathonController {
 
     @Get()
     @ResponseSchema(HackathonListChunk)
-    getList(@QueryParams() filter: HackathonFilter) {
+    async getList(@CurrentUser({ required: false }) user: User, @QueryParams() filter: HackathonFilter) {
+        const isAdmin = user && (await platformAdminService.isAdmin(user.id));
+
+        if (!isAdmin) filter.status = HackathonStatus.Online;
+
         return this.service.getList(filter);
     }
 }

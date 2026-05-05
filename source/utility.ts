@@ -31,18 +31,9 @@ export const {
 } = process.env;
 
 export const interpolateURL = (template: string, params: Record<string, string | number>) =>
-    Object.entries(params).reduce(
-        (url, [key, value]) => url.replace(`:${key}`, String(value)),
-        template
-    );
+    template.replace(/:([^/]+)/g, (match, key) => (key in params ? String(params[key]) : match));
 
-export const escapeHTML = (text: string) =>
-    text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+export { escape as escapeHTML } from 'html-escaper';
 
 export type NoEmptyFields<T> = {
     [K in keyof T as T[K] extends null | undefined | '' | [] ? never : K]: T[K];
