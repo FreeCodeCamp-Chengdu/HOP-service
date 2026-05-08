@@ -281,9 +281,10 @@ describe('Main business logic', () => {
         );
         expect(list).toEqual({ count: 1, list: [testHackathon] });
 
-        const { data: empty } = await client.hackathon.hackathonControllerGetList({
-            keywords: 'none'
-        });
+        const { data: empty } = await client.hackathon.hackathonControllerGetList(
+            { keywords: 'none' },
+            { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+        );
         expect(empty).toEqual({ count: 0, list: [] });
     });
 
