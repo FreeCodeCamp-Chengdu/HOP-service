@@ -1,4 +1,3 @@
-import { escape as escapeHTML } from 'html-escaper';
 import {
     Authorized,
     Body,
@@ -27,6 +26,7 @@ import {
     User
 } from '../model';
 import { emailService, gitTemplateService, teamService, UserServiceWithLog } from '../service';
+import { renderTeamWorkSubmitted } from '../template/TeamWorkSubmitted';
 import { interpolateURL, searchConditionOf, TEAM_FRONTEND_URL } from '../utility';
 
 @JsonController('/hackathon/:name/team/:tid/work')
@@ -73,11 +73,11 @@ export class TeamWorkController {
 
         if (TEAM_FRONTEND_URL) {
             const { name } = team.hackathon;
-            const url = escapeHTML(interpolateURL(TEAM_FRONTEND_URL, { name, tid }));
             const subject = `New Team Work Submitted: ${saved.title}`;
-            const html =
-                `<p>Your team has submitted a new work: <strong>${escapeHTML(saved.title)}</strong></p>` +
-                `<p><a href="${url}">View Work</a></p>`;
+            const html = await renderTeamWorkSubmitted({
+                workTitle: saved.title,
+                teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid })
+            });
 
             emailService.sendToTeamMembers(tid, undefined, subject, html);
             emailService.sendToHackathonStaff(name, subject, html);

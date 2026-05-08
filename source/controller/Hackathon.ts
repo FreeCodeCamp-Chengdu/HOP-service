@@ -1,4 +1,3 @@
-import { escape as escapeHTML } from 'html-escaper';
 import {
     Authorized,
     Body,
@@ -28,6 +27,8 @@ import {
     User
 } from '../model';
 import { emailService, enrollmentService, hackathonService, staffService } from '../service';
+import { renderHackathonCreated } from '../template/HackathonCreated';
+import { renderHackathonStatusUpdated } from '../template/HackathonStatusUpdated';
 import { ADMIN_FRONTEND_URL, HACKATHON_ADMIN_URL, interpolateURL } from '../utility';
 
 @JsonController('/hackathon')
@@ -57,8 +58,11 @@ export class HackathonController {
             emailService.sendToHackathonStaff(
                 name,
                 `Hackathon Status Updated: ${old.displayName}`,
-                `<p>The hackathon <strong>${escapeHTML(old.displayName)}</strong> status has been updated to <strong>${escapeHTML(newData.status)}</strong>.</p>` +
-                    `<p><a href="${escapeHTML(interpolateURL(HACKATHON_ADMIN_URL, { name }))}">View Hackathon</a></p>`
+                await renderHackathonStatusUpdated({
+                    displayName: old.displayName,
+                    newStatus: newData.status,
+                    hackathonUrl: interpolateURL(HACKATHON_ADMIN_URL, { name })
+                })
             );
         return updated;
     }
@@ -126,8 +130,10 @@ export class HackathonController {
         if (ADMIN_FRONTEND_URL)
             emailService.sendToPlatformAdmins(
                 `New Hackathon Needs Review: ${saved.displayName}`,
-                `<p>A new hackathon <strong>${escapeHTML(saved.displayName)}</strong> has been created and is awaiting your review.</p>` +
-                    `<p><a href="${escapeHTML(interpolateURL(ADMIN_FRONTEND_URL, { name: saved.name }))}">Review Hackathon</a></p>`
+                await renderHackathonCreated({
+                    displayName: saved.displayName,
+                    reviewUrl: interpolateURL(ADMIN_FRONTEND_URL, { name: saved.name })
+                })
             );
         return saved;
     }

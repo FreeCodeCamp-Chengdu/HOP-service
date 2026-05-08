@@ -1,4 +1,3 @@
-import { escape as escapeHTML } from 'html-escaper';
 import {
     Authorized,
     Body,
@@ -17,6 +16,7 @@ import { groupBy, sum } from 'web-utility';
 
 import { BaseFilter, Evaluation, EvaluationListChunk, Score, User } from '../model';
 import { emailService, teamService, UserServiceWithLog } from '../service';
+import { renderEvaluationSubmitted } from '../template/EvaluationSubmitted';
 import { interpolateURL, searchConditionOf, TEAM_FRONTEND_URL } from '../utility';
 
 @JsonController('/hackathon/:name/team/:tid/evaluation')
@@ -64,11 +64,10 @@ export class EvaluationController {
         await teamService.store.save({ ...team, scores, score });
 
         if (TEAM_FRONTEND_URL) {
-            const url = escapeHTML(interpolateURL(TEAM_FRONTEND_URL, { name, tid }));
             const subject = `New Evaluation Submitted for Your Team`;
-            const html =
-                `<p>A new evaluation has been submitted for your team.</p>` +
-                `<p><a href="${url}">View Team</a></p>`;
+            const html = await renderEvaluationSubmitted({
+                teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid })
+            });
 
             emailService.sendToTeamMembers(tid, undefined, subject, html);
             emailService.sendToHackathonStaff(name, subject, html);

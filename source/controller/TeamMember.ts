@@ -1,5 +1,4 @@
 import { isNotEmptyObject } from 'class-validator';
-import { escape as escapeHTML } from 'html-escaper';
 import {
     Authorized,
     Body,
@@ -28,6 +27,7 @@ import {
     teamService
 } from '../service';
 import { interpolateURL, searchConditionOf, TEAM_ADMIN_URL } from '../utility';
+import { renderTeamJoinRequest } from '../template/TeamJoinRequest';
 
 @JsonController('/hackathon/:name/team/:id/member')
 export class TeamMemberController {
@@ -96,8 +96,10 @@ export class TeamMemberController {
                 id,
                 TeamMemberRole.Admin,
                 `New Team Join Request`,
-                `<p><strong>${escapeHTML(createdBy.name)}</strong> has applied to join your team.</p>` +
-                    `<p><a href="${escapeHTML(interpolateURL(TEAM_ADMIN_URL, { name, id }))}">View Team</a></p>`
+                await renderTeamJoinRequest({
+                    applicantName: createdBy.name,
+                    teamUrl: interpolateURL(TEAM_ADMIN_URL, { name, id })
+                })
             );
         return member;
     }
