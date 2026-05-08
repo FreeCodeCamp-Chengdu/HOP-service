@@ -6,7 +6,9 @@ export class OAuthSignInData {
 }
 
 export interface CNBUser {
-    login: string;
+    id: string;
+    username: string;
+    nickname: string;
     email: string;
-    avatar_url: string;
+    avatar: string;
 }

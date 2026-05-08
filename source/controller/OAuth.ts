@@ -1,5 +1,5 @@
 import { githubClient, User as GitHubUser } from 'mobx-github';
-import { Body, HttpCode, JsonController, Post } from 'routing-controllers';
+import { Body, HttpCode, HttpError, JsonController, Post } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { isDeepStrictEqual } from 'util';
 
@@ -37,20 +37,22 @@ export class OauthController {
     @ResponseSchema(User)
     async signInWithCNB(@Body() { accessToken }: OAuthSignInData) {
         const response = await fetch('https://api.cnb.cool/user', {
-            headers: { Authorization: `Bearer ${accessToken}` }
+            headers: {
+                Accept: 'application/vnd.cnb.api+json',
+                Authorization: `Bearer ${accessToken}`
+            }
         });
-        if (!response.ok)
-            throw new Error(`CNB API error: ${response.status} ${response.statusText}`);
+        if (!response.ok) throw new HttpError(response.status, response.statusText);
 
-        const { login, email, avatar_url } = (await response.json()) as CNBUser;
+        const { username, nickname, email, avatar } = (await response.json()) as CNBUser;
 
-        if (!login || !email)
-            throw new Error('CNB user info is missing required fields (login, email)');
+        if (!username || !email)
+            throw new HttpError(422, 'CNB user info is missing required fields (username, email)');
 
         const user =
             (await this.userStore.findOneBy({ email })) ||
             (await sessionService.signUp({ email, password: accessToken }));
-        const newProfile = { name: login, avatar: avatar_url },
+        const newProfile = { name: nickname || username, avatar },
             oldProfile = { name: user.name, avatar: user.avatar };
 
         if (!isDeepStrictEqual(oldProfile, newProfile)) {
