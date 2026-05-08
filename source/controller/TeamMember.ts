@@ -1,5 +1,5 @@
-import { escape as escapeHTML } from 'html-escaper';
 import { isNotEmptyObject } from 'class-validator';
+import { escape as escapeHTML } from 'html-escaper';
 import {
     Authorized,
     Body,
@@ -92,14 +92,13 @@ export class TeamMemberController {
         });
 
         if (TEAM_ADMIN_URL)
-            await emailService.sendToTeamMembers(
+            emailService.sendToTeamMembers(
                 id,
                 TeamMemberRole.Admin,
                 `New Team Join Request`,
                 `<p><strong>${escapeHTML(createdBy.name)}</strong> has applied to join your team.</p>` +
                     `<p><a href="${escapeHTML(interpolateURL(TEAM_ADMIN_URL, { name, id }))}">View Team</a></p>`
             );
-
         return member;
     }
 

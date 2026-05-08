@@ -70,12 +70,9 @@ export class EvaluationController {
                 `<p>A new evaluation has been submitted for your team.</p>` +
                 `<p><a href="${url}">View Team</a></p>`;
 
-            await Promise.all([
-                emailService.sendToTeamMembers(tid, undefined, subject, html),
-                emailService.sendToHackathonStaff(name, subject, html)
-            ]);
+            emailService.sendToTeamMembers(tid, undefined, subject, html);
+            emailService.sendToHackathonStaff(name, subject, html);
         }
-
         return saved;
     }
 

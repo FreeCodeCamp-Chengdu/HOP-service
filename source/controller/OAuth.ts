@@ -1,5 +1,12 @@
 import { githubClient, User as GitHubUser } from 'mobx-github';
-import { Body, HttpCode, HttpError, JsonController, Post } from 'routing-controllers';
+import {
+    Body,
+    HttpCode,
+    HttpError,
+    JsonController,
+    Post,
+    UnprocessableEntityError
+} from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { isDeepStrictEqual } from 'util';
 
@@ -47,8 +54,9 @@ export class OauthController {
         const { username, nickname, email, avatar } = (await response.json()) as CNBUser;
 
         if (!username || !email)
-            throw new HttpError(422, 'CNB user info is missing required fields (username, email)');
-
+            throw new UnprocessableEntityError(
+                'CNB user info is missing required fields (username, email)'
+            );
         const user =
             (await this.userStore.findOneBy({ email })) ||
             (await sessionService.signUp({ email, password: accessToken }));

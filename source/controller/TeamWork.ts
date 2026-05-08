@@ -79,12 +79,9 @@ export class TeamWorkController {
                 `<p>Your team has submitted a new work: <strong>${escapeHTML(saved.title)}</strong></p>` +
                 `<p><a href="${url}">View Work</a></p>`;
 
-            await Promise.all([
-                emailService.sendToTeamMembers(tid, undefined, subject, html),
-                emailService.sendToHackathonStaff(name, subject, html)
-            ]);
+            emailService.sendToTeamMembers(tid, undefined, subject, html);
+            emailService.sendToHackathonStaff(name, subject, html);
         }
-
         return saved;
     }
 

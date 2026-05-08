@@ -31,7 +31,7 @@ export const {
 } = process.env;
 
 export const interpolateURL = (template: string, params: Record<string, string | number>) =>
-    template.replace(/:([^/]+)/g, (match, key) => (key in params ? String(params[key]) : match));
+    template.replace(/:([^/]+)/g, (match, key) => (key in params ? params[key] + '' : match));
 
 export type NoEmptyFields<T> = {
     [K in keyof T as T[K] extends null | undefined | '' | [] ? never : K]: T[K];

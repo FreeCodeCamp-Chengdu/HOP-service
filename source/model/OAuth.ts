@@ -5,10 +5,4 @@ export class OAuthSignInData {
     accessToken: string;
 }
 
-export interface CNBUser {
-    id: string;
-    username: string;
-    nickname: string;
-    email: string;
-    avatar: string;
-}
+export type CNBUser = Record<'id' | 'username' | 'nickname' | 'email' | 'avatar', string>;

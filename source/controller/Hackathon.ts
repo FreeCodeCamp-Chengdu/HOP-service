@@ -54,20 +54,19 @@ export class HackathonController {
         const updated = await this.service.editOne(old.id, newData, updatedBy);
 
         if (newData.status && newData.status !== old.status && HACKATHON_ADMIN_URL)
-            await emailService.sendToHackathonStaff(
+            emailService.sendToHackathonStaff(
                 name,
                 `Hackathon Status Updated: ${old.displayName}`,
                 `<p>The hackathon <strong>${escapeHTML(old.displayName)}</strong> status has been updated to <strong>${escapeHTML(newData.status)}</strong>.</p>` +
                     `<p><a href="${escapeHTML(interpolateURL(HACKATHON_ADMIN_URL, { name }))}">View Hackathon</a></p>`
             );
-
         return updated;
     }
 
     @Get('/:name')
     @ResponseSchema(Hackathon)
     @OnNull(404)
-    async getOne(@CurrentUser({ required: false }) user: User, @Param('name') name: string) {
+    async getOne(@CurrentUser() user: User, @Param('name') name: string) {
         const hackathon = await this.store.findOne({
             where: { name },
             relations: ['createdBy']
@@ -125,18 +124,17 @@ export class HackathonController {
         );
 
         if (ADMIN_FRONTEND_URL)
-            await emailService.sendToPlatformAdmins(
+            emailService.sendToPlatformAdmins(
                 `New Hackathon Needs Review: ${saved.displayName}`,
                 `<p>A new hackathon <strong>${escapeHTML(saved.displayName)}</strong> has been created and is awaiting your review.</p>` +
                     `<p><a href="${escapeHTML(interpolateURL(ADMIN_FRONTEND_URL, { name: saved.name }))}">Review Hackathon</a></p>`
             );
-
         return saved;
     }
 
     @Get()
     @ResponseSchema(HackathonListChunk)
-    async getList(@CurrentUser({ required: false }) user: User, @QueryParams() filter: HackathonFilter) {
+    async getList(@CurrentUser() user: User, @QueryParams() filter: HackathonFilter) {
         const isAdmin = user?.roles?.includes(Role.Administrator) ?? false;
 
         if (!isAdmin) filter.status = HackathonStatus.Online;

@@ -37,3 +37,4 @@ dataSource.initialize().then(() =>
         console.timeEnd('Server boot');
     })
 );
+process.on('unhandledRejection', console.error);

@@ -20,27 +20,34 @@ export class EmailService {
     private async send(to: string | string[], subject: string, html: string) {
         const recipients = Array.isArray(to) ? to.filter(Boolean) : to;
 
-        if (!this.transporter || !recipients || (Array.isArray(recipients) && !recipients.length))
-            return;
+        if (!this.transporter || !recipients[0]) return;
 
         try {
-            return await this.transporter.sendMail({ from: SMTP_USER, to: recipients, subject, html });
+            return await this.transporter.sendMail({
+                from: SMTP_USER,
+                to: recipients,
+                subject,
+                html
+            });
         } catch (error) {
-            console.error('[EmailService] Failed to send email:', error);
+            console.error('[Email Service] Failed to send email:', error);
         }
     }
 
-    sendToUser(user: User, subject: string, html: string) {
-        return this.send(user.email ?? '', subject, html);
+    sendToUsers(users: User[], subject: string, html: string) {
+        const emails = users.map(({ email }) => email).filter(Boolean);
+
+        return this.send(emails, subject, html);
     }
 
     async sendToPlatformAdmins(subject: string, html: string) {
         const admins = await platformAdminService.store.find({ relations: ['user'] });
-        const emails = admins
-            .map(({ user }) => user.email)
-            .filter((email): email is string => Boolean(email));
 
-        return this.send(emails, subject, html);
+        return this.sendToUsers(
+            admins.map(({ user }) => user),
+            subject,
+            html
+        );
     }
 
     async sendToHackathonStaff(hackathonName: string, subject: string, html: string) {
@@ -48,11 +55,11 @@ export class EmailService {
             where: { hackathon: { name: hackathonName } },
             relations: ['user']
         });
-        const emails = staffList
-            .map(({ user }) => user.email)
-            .filter((email): email is string => Boolean(email));
-
-        return this.send(emails, subject, html);
+        return this.sendToUsers(
+            staffList.map(({ user }) => user),
+            subject,
+            html
+        );
     }
 
     async sendToTeamMembers(
@@ -65,11 +72,11 @@ export class EmailService {
             where: { team: { id: teamId }, ...(role && { role }) },
             relations: ['user']
         });
-        const emails = members
-            .map(({ user }) => user.email)
-            .filter((email): email is string => Boolean(email));
-
-        return this.send(emails, subject, html);
+        return this.sendToUsers(
+            members.map(({ user }) => user),
+            subject,
+            html
+        );
     }
 }
 
