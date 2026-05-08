@@ -60,6 +60,14 @@ describe('Main business logic', () => {
         expect(session.token).toStrictEqual(expect.any(String));
 
         hackathonCreator.token = session.token;
+
+        const { data: adminSession } = await client.user.userControllerSignIn({
+            email: platformAdmin.email,
+            password: platformAdmin.password
+        });
+        expect(adminSession.token).toStrictEqual(expect.any(String));
+
+        platformAdmin.token = adminSession.token;
     });
 
     it('should get the profile of signed-in User with a valid token', async () => {
@@ -227,21 +235,50 @@ describe('Main business logic', () => {
         delete testHackathon.deletedAt;
     });
 
+    it('should only show Online hackathons to non-admins in the list', async () => {
+        // Hackathon is in 'planning' status — non-admins and anonymous users only see Online ones
+        const { data: anonList } = await client.hackathon.hackathonControllerGetList();
+
+        expect(anonList).toEqual({ count: 0, list: [] });
+
+        // Platform admin (roles includes Administrator) sees all hackathons regardless of status
+        const { data: adminList } = await client.hackathon.hackathonControllerGetList(
+            {},
+            { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+        );
+        expect(adminList.count).toBeGreaterThanOrEqual(1);
+        expect(adminList.list.some(h => h.id === testHackathon.id)).toBe(true);
+    });
+
+    it('should forbid anonymous access to a non-Online hackathon detail', async () => {
+        try {
+            await client.hackathon.hackathonControllerGetOne(testHackathon.name);
+            fail('Should have thrown a 403 error');
+        } catch (error) {
+            expect((error as HttpResponse<unknown>).status).toBe(403);
+        }
+    });
+
     it('should get the list of hackathons', async () => {
-        const { data: list1 } = await client.hackathon.hackathonControllerGetList();
+        const { data: list1 } = await client.hackathon.hackathonControllerGetList(
+            {},
+            { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+        );
 
         expect(list1).toEqual({ count: 1, list: [testHackathon] });
 
-        const { data: list2 } = await client.hackathon.hackathonControllerGetList({
-            createdBy: hackathonCreator.id
-        });
+        const { data: list2 } = await client.hackathon.hackathonControllerGetList(
+            { createdBy: hackathonCreator.id },
+            { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+        );
         expect(list2).toEqual({ count: 1, list: [testHackathon] });
     });
 
     it('should search hackathons by keywords', async () => {
-        const { data: list } = await client.hackathon.hackathonControllerGetList({
-            keywords: 'example'
-        });
+        const { data: list } = await client.hackathon.hackathonControllerGetList(
+            { keywords: 'example' },
+            { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+        );
         expect(list).toEqual({ count: 1, list: [testHackathon] });
 
         const { data: empty } = await client.hackathon.hackathonControllerGetList({
@@ -251,9 +288,10 @@ describe('Main business logic', () => {
     });
 
     it('should find hackathon by its creator', async () => {
-        const { data } = await client.hackathon.hackathonControllerGetList({
-            createdBy: hackathonCreator.id
-        });
+        const { data } = await client.hackathon.hackathonControllerGetList(
+            { createdBy: hackathonCreator.id },
+            { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+        );
         expect(data).toEqual({ count: 1, list: [testHackathon] });
     });
 
@@ -291,6 +329,18 @@ describe('Main business logic', () => {
         const { data: list2 } = await client.user.userControllerGetList();
 
         expect(list1.count).toBe(list2.count);
+    });
+
+    it('should forbid non-staff authenticated users from accessing a non-Online hackathon detail', async () => {
+        // teamLeader1 is an authenticated user but not a hackathon staff member
+        try {
+            await client.hackathon.hackathonControllerGetOne(testHackathon.name, {
+                headers: { Authorization: `Bearer ${teamLeader1.token}` }
+            });
+            fail('Should have thrown a 403 error');
+        } catch (error) {
+            expect((error as HttpResponse<unknown>).status).toBe(403);
+        }
     });
 
     // Award API tests
@@ -417,7 +467,8 @@ describe('Main business logic', () => {
             hackathon: expect.any(Object)
         });
         const { data: hackathon } = await client.hackathon.hackathonControllerGetOne(
-            testHackathon.name
+            testHackathon.name,
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
         );
         expect(hackathon.enrollment).toBe(1);
     });
