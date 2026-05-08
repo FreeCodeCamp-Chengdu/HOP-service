@@ -344,6 +344,40 @@ describe('Main business logic', () => {
         }
     });
 
+    it('should allow all users to access a hackathon after it is approved (set to Online)', async () => {
+        // Hackathon admin updates status to Online (simulating platform admin approval)
+        const { data: approved } = await client.hackathon.hackathonControllerUpdateOne(
+            testHackathon.name,
+            { status: 'online' as Hackathon['status'] },
+            { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+        );
+        expect(approved.status).toBe('online');
+
+        testHackathon = { ...testHackathon, ...approved };
+        delete testHackathon.updatedBy;
+        delete testHackathon.deletedAt;
+
+        // Anonymous user can now see the Online hackathon in the list
+        const { data: anonList } = await client.hackathon.hackathonControllerGetList();
+        expect(anonList.count).toBeGreaterThanOrEqual(1);
+        expect(anonList.list.some(h => h.id === testHackathon.id)).toBe(true);
+
+        // Anonymous user can access the detail of an Online hackathon
+        const { data: anonDetail } = await client.hackathon.hackathonControllerGetOne(
+            testHackathon.name
+        );
+        expect(anonDetail.id).toBe(testHackathon.id);
+        expect(anonDetail.status).toBe('online');
+
+        // Non-staff authenticated user can also access the detail of an Online hackathon
+        const { data: nonStaffDetail } = await client.hackathon.hackathonControllerGetOne(
+            testHackathon.name,
+            { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
+        );
+        expect(nonStaffDetail.id).toBe(testHackathon.id);
+        expect(nonStaffDetail.status).toBe('online');
+    });
+
     // Award API tests
     it('should create an award for the hackathon', async () => {
         const awardData = {
