@@ -1,13 +1,13 @@
 import { createTransport, Transporter } from 'nodemailer';
 
-import { resolveLocale } from '../i18n/email';
+import { i18n } from '../i18n/email';
 import { TeamMemberRole, User } from '../model';
 import { SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USER } from '../utility';
 import { platformAdminService } from './PlatformAdmin';
 import { staffService } from './Staff';
 import { teamMemberService } from './TeamMember';
 
-export type LocalizedRenderFn = (locale: string) => Promise<{ subject: string; html: string }>;
+export type LocalizedRenderer = () => Promise<{ subject: string; html: string }>;
 
 export class EmailService {
     private transporter: Transporter | null =
@@ -20,38 +20,15 @@ export class EmailService {
               })
             : null;
 
-    private async send(to: string | string[], subject: string, html: string) {
-        const recipients = Array.isArray(to) ? to.filter(Boolean) : to;
-
-        if (!this.transporter || !recipients[0]) return;
-
-        try {
-            return await this.transporter.sendMail({
-                from: SMTP_USER,
-                to: recipients,
-                subject,
-                html
-            });
-        } catch (error) {
-            console.error('[Email Service] Failed to send email:', error);
-        }
-    }
-
-    sendToUsers(users: User[], subject: string, html: string) {
-        const emails = users.map(({ email }) => email).filter(Boolean);
-
-        return this.send(emails, subject, html);
-    }
-
-    async sendToUsersLocalized(users: User[], renderFn: LocalizedRenderFn) {
+    async sendToUsers(users: User[], renderer: LocalizedRenderer) {
         if (!this.transporter) return;
 
         for (const user of users) {
             if (!user.email) continue;
 
             try {
-                const locale = resolveLocale(user.languages);
-                const { subject, html } = await renderFn(locale);
+                await i18n.loadLanguages(...((user.languages ?? []) as Parameters<typeof i18n.loadLanguages>));
+                const { subject, html } = await renderer();
 
                 await this.transporter.sendMail({ from: SMTP_USER, to: user.email, subject, html });
             } catch (error) {
@@ -60,69 +37,30 @@ export class EmailService {
         }
     }
 
-    async sendToPlatformAdmins(subject: string, html: string) {
+    async sendToPlatformAdmins(renderer: LocalizedRenderer) {
         const admins = await platformAdminService.store.find({ relations: ['user'] });
 
-        return this.sendToUsers(
-            admins.map(({ user }) => user),
-            subject,
-            html
-        );
+        return this.sendToUsers(admins.map(({ user }) => user), renderer);
     }
 
-    async sendToPlatformAdminsLocalized(renderFn: LocalizedRenderFn) {
-        const admins = await platformAdminService.store.find({ relations: ['user'] });
-
-        return this.sendToUsersLocalized(admins.map(({ user }) => user), renderFn);
-    }
-
-    async sendToHackathonStaff(hackathonName: string, subject: string, html: string) {
+    async sendToHackathonStaff(hackathonName: string, renderer: LocalizedRenderer) {
         const staffList = await staffService.store.find({
             where: { hackathon: { name: hackathonName } },
             relations: ['user']
         });
-        return this.sendToUsers(
-            staffList.map(({ user }) => user),
-            subject,
-            html
-        );
-    }
-
-    async sendToHackathonStaffLocalized(hackathonName: string, renderFn: LocalizedRenderFn) {
-        const staffList = await staffService.store.find({
-            where: { hackathon: { name: hackathonName } },
-            relations: ['user']
-        });
-        return this.sendToUsersLocalized(staffList.map(({ user }) => user), renderFn);
+        return this.sendToUsers(staffList.map(({ user }) => user), renderer);
     }
 
     async sendToTeamMembers(
         teamId: number,
         role: TeamMemberRole | undefined,
-        subject: string,
-        html: string
+        renderer: LocalizedRenderer
     ) {
         const members = await teamMemberService.store.find({
             where: { team: { id: teamId }, ...(role && { role }) },
             relations: ['user']
         });
-        return this.sendToUsers(
-            members.map(({ user }) => user),
-            subject,
-            html
-        );
-    }
-
-    async sendToTeamMembersLocalized(
-        teamId: number,
-        role: TeamMemberRole | undefined,
-        renderFn: LocalizedRenderFn
-    ) {
-        const members = await teamMemberService.store.find({
-            where: { team: { id: teamId }, ...(role && { role }) },
-            relations: ['user']
-        });
-        return this.sendToUsersLocalized(members.map(({ user }) => user), renderFn);
+        return this.sendToUsers(members.map(({ user }) => user), renderer);
     }
 }
 

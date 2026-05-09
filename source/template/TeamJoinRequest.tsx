@@ -12,66 +12,56 @@ import {
 import { render } from '@react-email/render';
 import { FC } from 'react';
 
-import { emailMessages, resolveLocale } from '../i18n/email';
+import { i18n } from '../i18n/email';
 
-type TeamJoinRequestProps = Record<'applicantName' | 'teamUrl', string> & { locale?: string };
+type TeamJoinRequestProps = Record<'applicantName' | 'teamUrl', string>;
 
-export const TeamJoinRequest: FC<TeamJoinRequestProps> = ({ applicantName, teamUrl, locale }) => {
-    const t = emailMessages[resolveLocale([locale])].teamJoinRequest;
+export const TeamJoinRequest: FC<TeamJoinRequestProps> = ({ applicantName, teamUrl }) => (
+    <Html>
+        <Head />
+        <Preview>{i18n.t('team_join_request_subject', { name: applicantName })}</Preview>
+        <Body style={{ fontFamily: 'sans-serif', backgroundColor: '#f4f4f4', padding: '20px' }}>
+            <Container
+                style={{
+                    maxWidth: '600px',
+                    margin: '0 auto',
+                    backgroundColor: '#ffffff',
+                    borderRadius: '8px',
+                    padding: '32px'
+                }}
+            >
+                <Heading style={{ color: '#333333', fontSize: '24px', marginBottom: '16px' }}>
+                    {i18n.t('team_join_request_heading')}
+                </Heading>
+                <Section>
+                    <Text style={{ color: '#555555', fontSize: '16px', lineHeight: '1.6' }}>
+                        {i18n.t('team_join_request_body', { name: applicantName })}
+                    </Text>
+                </Section>
+                <Section style={{ marginTop: '24px' }}>
+                    <Button
+                        href={teamUrl}
+                        style={{
+                            backgroundColor: '#4F46E5',
+                            color: '#ffffff',
+                            padding: '12px 24px',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            fontSize: '16px'
+                        }}
+                    >
+                        {i18n.t('team_join_request_button')}
+                    </Button>
+                </Section>
+            </Container>
+        </Body>
+    </Html>
+);
 
-    return (
-        <Html>
-            <Head />
-            <Preview>{t.preview(applicantName)}</Preview>
-            <Body style={{ fontFamily: 'sans-serif', backgroundColor: '#f4f4f4', padding: '20px' }}>
-                <Container
-                    style={{
-                        maxWidth: '600px',
-                        margin: '0 auto',
-                        backgroundColor: '#ffffff',
-                        borderRadius: '8px',
-                        padding: '32px'
-                    }}
-                >
-                    <Heading style={{ color: '#333333', fontSize: '24px', marginBottom: '16px' }}>
-                        {t.heading}
-                    </Heading>
-                    <Section>
-                        <Text style={{ color: '#555555', fontSize: '16px', lineHeight: '1.6' }}>
-                            {t.body(applicantName)}
-                        </Text>
-                    </Section>
-                    <Section style={{ marginTop: '24px' }}>
-                        <Button
-                            href={teamUrl}
-                            style={{
-                                backgroundColor: '#4F46E5',
-                                color: '#ffffff',
-                                padding: '12px 24px',
-                                borderRadius: '6px',
-                                textDecoration: 'none',
-                                fontSize: '16px'
-                            }}
-                        >
-                            {t.button}
-                        </Button>
-                    </Section>
-                </Container>
-            </Body>
-        </Html>
-    );
-};
-
-export const renderTeamJoinRequest = async (
-    { applicantName, teamUrl }: Record<'applicantName' | 'teamUrl', string>,
-    locale?: string
-): Promise<{ subject: string; html: string }> => {
-    const t = emailMessages[resolveLocale([locale])].teamJoinRequest;
-
-    return {
-        subject: t.subject(applicantName),
-        html: await render(
-            <TeamJoinRequest applicantName={applicantName} teamUrl={teamUrl} locale={locale} />
-        )
-    };
-};
+export const renderTeamJoinRequest = async ({
+    applicantName,
+    teamUrl
+}: Record<'applicantName' | 'teamUrl', string>): Promise<{ subject: string; html: string }> => ({
+    subject: i18n.t('team_join_request_subject', { name: applicantName }),
+    html: await render(<TeamJoinRequest applicantName={applicantName} teamUrl={teamUrl} />)
+});

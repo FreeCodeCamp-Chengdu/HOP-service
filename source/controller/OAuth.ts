@@ -1,4 +1,5 @@
 import { githubClient, User as GitHubUser } from 'mobx-github';
+import { parseLanguageHeader } from 'mobx-i18n';
 import {
     Body,
     HeaderParam,
@@ -11,24 +12,33 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { isDeepStrictEqual } from 'util';
 
-import { AccountOrigin, CNBUser, OAuthSignInData, User } from '../model';
+import {
+    CNBUser,
+    dataSource,
+    OAuthCredential,
+    OAuthPlatform,
+    OAuthSignInData,
+    User
+} from '../model';
 import { activityLogService, sessionService } from '../service';
-import { parseAcceptLanguage } from '../utility';
 
 @JsonController('/user/OAuth')
 export class OauthController {
     userStore = sessionService.userStore;
+    credentialStore = dataSource.getRepository(OAuthCredential);
 
     private async syncProfile(
         email: string,
         password: string,
-        profile: Partial<Pick<User, 'name' | 'avatar' | 'accountOrigin' | 'languages'>>
+        platform: OAuthPlatform,
+        accessToken: string,
+        profile: Partial<Pick<User, 'name' | 'avatar' | 'languages'>>
     ) {
         const user =
             (await this.userStore.findOneBy({ email })) ||
             (await sessionService.signUp({ email, password }));
-        const { name, avatar, accountOrigin, languages } = user;
-        const oldProfile = { name, avatar, accountOrigin, languages: languages?.length ? languages : [] };
+        const { name, avatar, languages } = user;
+        const oldProfile = { name, avatar, languages: languages?.length ? languages : [] };
         const newProfile = { ...profile, languages: profile.languages?.length ? profile.languages : [] };
 
         if (!isDeepStrictEqual(oldProfile, newProfile)) {
@@ -36,6 +46,18 @@ export class OauthController {
 
             await activityLogService.logUpdate(user, 'User', user.id);
         }
+
+        const existing = await this.credentialStore.findOneBy({
+            platform,
+            user: { id: user.id }
+        });
+        const credential = Object.assign(existing ?? new OAuthCredential(), {
+            platform,
+            accessToken,
+            user
+        });
+        await this.credentialStore.save(credential);
+
         return sessionService.sign(user);
     }
 
@@ -51,11 +73,10 @@ export class OauthController {
         });
         const { email, login, avatar_url } = body!;
 
-        return this.syncProfile(email, accessToken, {
+        return this.syncProfile(email, accessToken, OAuthPlatform.GitHub, accessToken, {
             name: login,
             avatar: avatar_url,
-            accountOrigin: AccountOrigin.GitHub,
-            languages: parseAcceptLanguage(acceptLanguage)
+            languages: parseLanguageHeader(acceptLanguage ?? '')
         });
     }
 
@@ -80,11 +101,10 @@ export class OauthController {
             throw new UnprocessableEntityError(
                 'CNB user info is missing required fields (username, email)'
             );
-        return this.syncProfile(email, accessToken, {
+        return this.syncProfile(email, accessToken, OAuthPlatform.CNB, accessToken, {
             name: nickname || username,
             avatar,
-            accountOrigin: AccountOrigin.CNB,
-            languages: parseAcceptLanguage(acceptLanguage)
+            languages: parseLanguageHeader(acceptLanguage ?? '')
         });
     }
 }

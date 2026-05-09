@@ -73,17 +73,14 @@ export class TeamWorkController {
 
         if (TEAM_FRONTEND_URL) {
             const { name } = team.hackathon;
-            const renderFn = (locale: string) =>
-                renderTeamWorkSubmitted(
-                    {
-                        workTitle: saved.title,
-                        teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid })
-                    },
-                    locale
-                );
+            const renderFn = () =>
+                renderTeamWorkSubmitted({
+                    workTitle: saved.title,
+                    teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid })
+                });
 
-            emailService.sendToTeamMembersLocalized(tid, undefined, renderFn);
-            emailService.sendToHackathonStaffLocalized(name, renderFn);
+            emailService.sendToTeamMembers(tid, undefined, renderFn);
+            emailService.sendToHackathonStaff(name, renderFn);
         }
         return saved;
     }

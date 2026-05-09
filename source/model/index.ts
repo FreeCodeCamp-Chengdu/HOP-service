@@ -9,6 +9,7 @@ import { Award, AwardAssignment } from './Award';
 import { Enrollment } from './Enrollment';
 import { GitTemplate } from './GitTemplate';
 import { Hackathon } from './Hackathon';
+import { OAuthCredential } from './OAuth';
 import { Organizer } from './Organizer';
 import { PlatformAdmin } from './PlatformAdmin';
 import { Staff } from './Staff';
@@ -42,6 +43,7 @@ const { ssl, host, port, user, password, database } = isProduct
 
 const entities = [
     User,
+    OAuthCredential,
     PlatformAdmin,
     ActivityLog,
     UserRank,
