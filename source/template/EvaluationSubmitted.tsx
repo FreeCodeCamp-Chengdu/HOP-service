@@ -12,16 +12,17 @@ import {
 import { render } from '@react-email/render';
 import { FC, useContext } from 'react';
 
-import { EmailI18n, I18nContext } from '../i18n/email';
+import { I18nStore, I18nContext } from '../translation';
 
 type EvaluationSubmittedProps = { teamUrl: string };
 
 export const EvaluationSubmitted: FC<EvaluationSubmittedProps> = ({ teamUrl }) => {
-    const i18n = useContext(I18nContext);
+    const { t } = useContext(I18nContext);
+
     return (
         <Html>
             <Head />
-            <Preview>{i18n.t('evaluation_submitted_subject')}</Preview>
+            <Preview>{t('evaluation_submitted_subject')}</Preview>
             <Body style={{ fontFamily: 'sans-serif', backgroundColor: '#f4f4f4', padding: '20px' }}>
                 <Container
                     style={{
@@ -33,11 +34,11 @@ export const EvaluationSubmitted: FC<EvaluationSubmittedProps> = ({ teamUrl }) =
                     }}
                 >
                     <Heading style={{ color: '#333333', fontSize: '24px', marginBottom: '16px' }}>
-                        {i18n.t('evaluation_submitted_heading')}
+                        {t('evaluation_submitted_heading')}
                     </Heading>
                     <Section>
                         <Text style={{ color: '#555555', fontSize: '16px', lineHeight: '1.6' }}>
-                            {i18n.t('evaluation_submitted_body')}
+                            {t('evaluation_submitted_body')}
                         </Text>
                     </Section>
                     <Section style={{ marginTop: '24px' }}>
@@ -52,7 +53,7 @@ export const EvaluationSubmitted: FC<EvaluationSubmittedProps> = ({ teamUrl }) =
                                 fontSize: '16px'
                             }}
                         >
-                            {i18n.t('evaluation_submitted_button')}
+                            {t('evaluation_submitted_button')}
                         </Button>
                     </Section>
                 </Container>
@@ -63,7 +64,7 @@ export const EvaluationSubmitted: FC<EvaluationSubmittedProps> = ({ teamUrl }) =
 
 export const renderEvaluationSubmitted = async (
     props: { teamUrl: string },
-    i18n: EmailI18n
+    i18n: I18nStore
 ): Promise<Record<'subject' | 'html', string>> => ({
     subject: i18n.t('evaluation_submitted_subject'),
     html: await render(

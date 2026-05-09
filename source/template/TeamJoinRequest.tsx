@@ -12,16 +12,17 @@ import {
 import { render } from '@react-email/render';
 import { FC, useContext } from 'react';
 
-import { EmailI18n, I18nContext } from '../i18n/email';
+import { I18nStore, I18nContext } from '../translation';
 
 type TeamJoinRequestProps = Record<'applicantName' | 'teamUrl', string>;
 
 export const TeamJoinRequest: FC<TeamJoinRequestProps> = ({ applicantName, teamUrl }) => {
-    const i18n = useContext(I18nContext);
+    const { t } = useContext(I18nContext);
+
     return (
         <Html>
             <Head />
-            <Preview>{i18n.t('team_join_request_subject', { name: applicantName })}</Preview>
+            <Preview>{t('team_join_request_subject', { name: applicantName })}</Preview>
             <Body style={{ fontFamily: 'sans-serif', backgroundColor: '#f4f4f4', padding: '20px' }}>
                 <Container
                     style={{
@@ -33,11 +34,11 @@ export const TeamJoinRequest: FC<TeamJoinRequestProps> = ({ applicantName, teamU
                     }}
                 >
                     <Heading style={{ color: '#333333', fontSize: '24px', marginBottom: '16px' }}>
-                        {i18n.t('team_join_request_heading')}
+                        {t('team_join_request_heading')}
                     </Heading>
                     <Section>
                         <Text style={{ color: '#555555', fontSize: '16px', lineHeight: '1.6' }}>
-                            {i18n.t('team_join_request_body', { name: applicantName })}
+                            {t('team_join_request_body', { name: applicantName })}
                         </Text>
                     </Section>
                     <Section style={{ marginTop: '24px' }}>
@@ -52,7 +53,7 @@ export const TeamJoinRequest: FC<TeamJoinRequestProps> = ({ applicantName, teamU
                                 fontSize: '16px'
                             }}
                         >
-                            {i18n.t('team_join_request_button')}
+                            {t('team_join_request_button')}
                         </Button>
                     </Section>
                 </Container>
@@ -63,7 +64,7 @@ export const TeamJoinRequest: FC<TeamJoinRequestProps> = ({ applicantName, teamU
 
 export const renderTeamJoinRequest = async (
     props: Record<'applicantName' | 'teamUrl', string>,
-    i18n: EmailI18n
+    i18n: I18nStore
 ): Promise<Record<'subject' | 'html', string>> => ({
     subject: i18n.t('team_join_request_subject', { name: props.applicantName }),
     html: await render(

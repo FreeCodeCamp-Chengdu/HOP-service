@@ -18,7 +18,7 @@ import { NewData } from 'mobx-restful';
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 
 import { Base, BaseFilter, InputData, ListChunk } from './Base';
-import type { OAuthCredential } from './OAuth';
+import { OAuthCredential } from './OAuth';
 
 export enum Gender {
     Female = 0,
@@ -127,7 +127,10 @@ export class User extends Base {
     @IsOptional()
     token?: string;
 
-    @OneToMany('OAuthCredential', (credential: OAuthCredential) => credential.user)
+    @Type(() => OAuthCredential)
+    @ValidateNested({ each: true })
+    @IsOptional()
+    @OneToMany('OAuthCredential', ({ user }: OAuthCredential) => user)
     oauthCredentials?: OAuthCredential[];
 }
 

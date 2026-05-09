@@ -1,4 +1,5 @@
-import { IsEnum, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsEnum, IsString, ValidateNested } from 'class-validator';
 import { Column, Entity, ManyToOne } from 'typeorm';
 
 import { Base } from './Base';
@@ -25,6 +26,8 @@ export class OAuthCredential extends Base {
     @Column()
     accessToken: string;
 
+    @Type(() => User)
+    @ValidateNested()
     @ManyToOne(() => User, user => user.oauthCredentials)
     user: User;
 }
@@ -36,4 +39,3 @@ export interface CNBError {
     errmsg: string;
     errparam: object;
 }
-

@@ -1,13 +1,13 @@
 import { createTransport, Transporter } from 'nodemailer';
 
-import { createI18n, EmailI18n } from '../i18n/email';
 import { TeamMemberRole, User } from '../model';
+import { createI18n, I18nStore } from '../translation';
 import { SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USER } from '../utility';
 import { platformAdminService } from './PlatformAdmin';
 import { staffService } from './Staff';
 import { teamMemberService } from './TeamMember';
 
-export type LocalizedRenderer = (i18n: EmailI18n) => Promise<Record<'subject' | 'html', string>>;
+export type LocalizedRenderer = (i18n: I18nStore) => Promise<Record<'subject' | 'html', string>>;
 
 export class EmailService {
     private transporter: Transporter | null =
@@ -43,7 +43,10 @@ export class EmailService {
     async sendToPlatformAdmins(renderer: LocalizedRenderer) {
         const admins = await platformAdminService.store.find({ relations: ['user'] });
 
-        return this.sendToUsers(admins.map(({ user }) => user), renderer);
+        return this.sendToUsers(
+            admins.map(({ user }) => user),
+            renderer
+        );
     }
 
     async sendToHackathonStaff(hackathonName: string, renderer: LocalizedRenderer) {
@@ -51,7 +54,10 @@ export class EmailService {
             where: { hackathon: { name: hackathonName } },
             relations: ['user']
         });
-        return this.sendToUsers(staffList.map(({ user }) => user), renderer);
+        return this.sendToUsers(
+            staffList.map(({ user }) => user),
+            renderer
+        );
     }
 
     async sendToTeamMembers(
@@ -63,7 +69,10 @@ export class EmailService {
             where: { team: { id: teamId }, ...(role && { role }) },
             relations: ['user']
         });
-        return this.sendToUsers(members.map(({ user }) => user), renderer);
+        return this.sendToUsers(
+            members.map(({ user }) => user),
+            renderer
+        );
     }
 }
 

@@ -307,7 +307,6 @@ describe('Main business logic', () => {
             email: expect.any(String),
             name: expect.any(String),
             avatar: expect.any(String),
-            password: null,
             token: expect.any(String)
         });
 

@@ -1,0 +1,4 @@
+autoInstallPeers: false
+allowBuilds:
+    better-sqlite3: true
+    core-js: true

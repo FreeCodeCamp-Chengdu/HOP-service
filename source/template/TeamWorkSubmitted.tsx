@@ -12,16 +12,17 @@ import {
 import { render } from '@react-email/render';
 import { FC, useContext } from 'react';
 
-import { EmailI18n, I18nContext } from '../i18n/email';
+import { I18nStore, I18nContext } from '../translation';
 
 type TeamWorkSubmittedProps = Record<'workTitle' | 'teamUrl', string>;
 
 export const TeamWorkSubmitted: FC<TeamWorkSubmittedProps> = ({ workTitle, teamUrl }) => {
-    const i18n = useContext(I18nContext);
+    const { t } = useContext(I18nContext);
+
     return (
         <Html>
             <Head />
-            <Preview>{i18n.t('team_work_submitted_subject', { title: workTitle })}</Preview>
+            <Preview>{t('team_work_submitted_subject', { title: workTitle })}</Preview>
             <Body style={{ fontFamily: 'sans-serif', backgroundColor: '#f4f4f4', padding: '20px' }}>
                 <Container
                     style={{
@@ -33,11 +34,11 @@ export const TeamWorkSubmitted: FC<TeamWorkSubmittedProps> = ({ workTitle, teamU
                     }}
                 >
                     <Heading style={{ color: '#333333', fontSize: '24px', marginBottom: '16px' }}>
-                        {i18n.t('team_work_submitted_heading')}
+                        {t('team_work_submitted_heading')}
                     </Heading>
                     <Section>
                         <Text style={{ color: '#555555', fontSize: '16px', lineHeight: '1.6' }}>
-                            {i18n.t('team_work_submitted_body', { title: workTitle })}
+                            {t('team_work_submitted_body', { title: workTitle })}
                         </Text>
                     </Section>
                     <Section style={{ marginTop: '24px' }}>
@@ -52,7 +53,7 @@ export const TeamWorkSubmitted: FC<TeamWorkSubmittedProps> = ({ workTitle, teamU
                                 fontSize: '16px'
                             }}
                         >
-                            {i18n.t('team_work_submitted_button')}
+                            {t('team_work_submitted_button')}
                         </Button>
                     </Section>
                 </Container>
@@ -63,7 +64,7 @@ export const TeamWorkSubmitted: FC<TeamWorkSubmittedProps> = ({ workTitle, teamU
 
 export const renderTeamWorkSubmitted = async (
     props: Record<'workTitle' | 'teamUrl', string>,
-    i18n: EmailI18n
+    i18n: I18nStore
 ): Promise<Record<'subject' | 'html', string>> => ({
     subject: i18n.t('team_work_submitted_subject', { title: props.workTitle }),
     html: await render(
