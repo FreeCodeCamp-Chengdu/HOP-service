@@ -2,6 +2,7 @@ export type EmailLocale = 'en' | 'zh-CN';
 
 export const resolveLocale = (languages?: string[]): EmailLocale => {
     for (const lang of languages ?? []) {
+        // Maps all zh variants (zh-CN, zh-TW, zh-HK, etc.) to zh-CN (Simplified Chinese)
         if (lang.startsWith('zh')) return 'zh-CN';
     }
     return 'en';

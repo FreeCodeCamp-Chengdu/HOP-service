@@ -28,10 +28,11 @@ export class OauthController {
             (await this.userStore.findOneBy({ email })) ||
             (await sessionService.signUp({ email, password }));
         const { name, avatar, accountOrigin, languages } = user;
-        const oldProfile = { name, avatar, accountOrigin, languages };
+        const oldProfile = { name, avatar, accountOrigin, languages: languages?.length ? languages : [] };
+        const newProfile = { ...profile, languages: profile.languages?.length ? profile.languages : [] };
 
-        if (!isDeepStrictEqual(oldProfile, profile)) {
-            await this.userStore.save(Object.assign(user, profile));
+        if (!isDeepStrictEqual(oldProfile, newProfile)) {
+            await this.userStore.save(Object.assign(user, newProfile));
 
             await activityLogService.logUpdate(user, 'User', user.id);
         }
