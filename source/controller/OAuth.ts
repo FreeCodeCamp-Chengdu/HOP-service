@@ -13,6 +13,7 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 import { isDeepStrictEqual } from 'util';
 
 import {
+    CNBError,
     CNBUser,
     dataSource,
     OAuthCredential,
@@ -29,14 +30,13 @@ export class OauthController {
 
     private async syncProfile(
         email: string,
-        password: string,
         platform: OAuthPlatform,
         accessToken: string,
         profile: Partial<Pick<User, 'name' | 'avatar' | 'languages'>>
     ) {
         const user =
             (await this.userStore.findOneBy({ email })) ||
-            (await sessionService.signUp({ email, password }));
+            (await sessionService.signUp({ email, password: accessToken }));
         const { name, avatar, languages } = user;
         const oldProfile = { name, avatar, languages: languages?.length ? languages : [] };
         const newProfile = { ...profile, languages: profile.languages?.length ? profile.languages : [] };
@@ -51,12 +51,7 @@ export class OauthController {
             platform,
             user: { id: user.id }
         });
-        const credential = Object.assign(existing ?? new OAuthCredential(), {
-            platform,
-            accessToken,
-            user
-        });
-        await this.credentialStore.save(credential);
+        await this.credentialStore.save({ ...existing, platform, accessToken, user });
 
         return sessionService.sign(user);
     }
@@ -73,7 +68,7 @@ export class OauthController {
         });
         const { email, login, avatar_url } = body!;
 
-        return this.syncProfile(email, accessToken, OAuthPlatform.GitHub, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, {
             name: login,
             avatar: avatar_url,
             languages: parseLanguageHeader(acceptLanguage ?? '')
@@ -93,7 +88,11 @@ export class OauthController {
                 Authorization: `Bearer ${accessToken}`
             }
         });
-        if (!response.ok) throw new HttpError(response.status, response.statusText);
+        if (!response.ok) {
+            console.table((await response.json()) as CNBError);
+
+            throw new HttpError(response.status, response.statusText);
+        }
 
         const { username, nickname, email, avatar } = (await response.json()) as CNBUser;
 
@@ -101,7 +100,7 @@ export class OauthController {
             throw new UnprocessableEntityError(
                 'CNB user info is missing required fields (username, email)'
             );
-        return this.syncProfile(email, accessToken, OAuthPlatform.CNB, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, {
             name: nickname || username,
             avatar,
             languages: parseLanguageHeader(acceptLanguage ?? '')

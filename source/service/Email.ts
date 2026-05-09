@@ -1,13 +1,13 @@
 import { createTransport, Transporter } from 'nodemailer';
 
-import { i18n } from '../i18n/email';
+import { createI18n, EmailI18n } from '../i18n/email';
 import { TeamMemberRole, User } from '../model';
 import { SMTP_HOST, SMTP_PASSWORD, SMTP_PORT, SMTP_USER } from '../utility';
 import { platformAdminService } from './PlatformAdmin';
 import { staffService } from './Staff';
 import { teamMemberService } from './TeamMember';
 
-export type LocalizedRenderer = () => Promise<{ subject: string; html: string }>;
+export type LocalizedRenderer = (i18n: EmailI18n) => Promise<Record<'subject' | 'html', string>>;
 
 export class EmailService {
     private transporter: Transporter | null =
@@ -27,8 +27,11 @@ export class EmailService {
             if (!user.email) continue;
 
             try {
-                await i18n.loadLanguages(...((user.languages ?? []) as Parameters<typeof i18n.loadLanguages>));
-                const { subject, html } = await renderer();
+                const i18n = createI18n();
+                await i18n.loadLanguages(
+                    ...((user.languages ?? []) as Parameters<typeof i18n.loadLanguages>)
+                );
+                const { subject, html } = await renderer(i18n);
 
                 await this.transporter.sendMail({ from: SMTP_USER, to: user.email, subject, html });
             } catch (error) {

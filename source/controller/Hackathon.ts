@@ -55,12 +55,12 @@ export class HackathonController {
         const updated = await this.service.editOne(old.id, newData, updatedBy);
 
         if (newData.status && newData.status !== old.status && HACKATHON_ADMIN_URL)
-            emailService.sendToHackathonStaff(name, () =>
+            emailService.sendToHackathonStaff(name, i18n =>
                 renderHackathonStatusUpdated({
                     displayName: old.displayName,
                     newStatus: newData.status,
                     hackathonUrl: interpolateURL(HACKATHON_ADMIN_URL, { name })
-                })
+                }, i18n)
             );
         return updated;
     }
@@ -126,11 +126,11 @@ export class HackathonController {
         );
 
         if (ADMIN_FRONTEND_URL)
-            emailService.sendToPlatformAdmins(() =>
+            emailService.sendToPlatformAdmins(i18n =>
                 renderHackathonCreated({
                     displayName: saved.displayName,
                     reviewUrl: interpolateURL(ADMIN_FRONTEND_URL, { name: saved.name })
-                })
+                }, i18n)
             );
         return saved;
     }

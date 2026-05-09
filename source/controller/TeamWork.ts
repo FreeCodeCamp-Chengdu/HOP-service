@@ -25,7 +25,7 @@ import {
     TeamWorkType,
     User
 } from '../model';
-import { emailService, gitTemplateService, teamService, UserServiceWithLog } from '../service';
+import { emailService, gitTemplateService, teamService, LocalizedRenderer, UserServiceWithLog } from '../service';
 import { renderTeamWorkSubmitted } from '../template/TeamWorkSubmitted';
 import { interpolateURL, searchConditionOf, TEAM_FRONTEND_URL } from '../utility';
 
@@ -73,11 +73,11 @@ export class TeamWorkController {
 
         if (TEAM_FRONTEND_URL) {
             const { name } = team.hackathon;
-            const renderFn = () =>
+            const renderFn: LocalizedRenderer = i18n =>
                 renderTeamWorkSubmitted({
                     workTitle: saved.title,
                     teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid })
-                });
+                }, i18n);
 
             emailService.sendToTeamMembers(tid, undefined, renderFn);
             emailService.sendToHackathonStaff(name, renderFn);

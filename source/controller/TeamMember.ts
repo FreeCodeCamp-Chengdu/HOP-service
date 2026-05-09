@@ -92,11 +92,11 @@ export class TeamMemberController {
         });
 
         if (TEAM_ADMIN_URL)
-            emailService.sendToTeamMembers(id, TeamMemberRole.Admin, () =>
+            emailService.sendToTeamMembers(id, TeamMemberRole.Admin, i18n =>
                 renderTeamJoinRequest({
                     applicantName: createdBy.name,
                     teamUrl: interpolateURL(TEAM_ADMIN_URL, { name, id })
-                })
+                }, i18n)
             );
         return member;
     }

@@ -15,7 +15,7 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 import { groupBy, sum } from 'web-utility';
 
 import { BaseFilter, Evaluation, EvaluationListChunk, Score, User } from '../model';
-import { emailService, teamService, UserServiceWithLog } from '../service';
+import { emailService, teamService, LocalizedRenderer, UserServiceWithLog } from '../service';
 import { renderEvaluationSubmitted } from '../template/EvaluationSubmitted';
 import { interpolateURL, searchConditionOf, TEAM_FRONTEND_URL } from '../utility';
 
@@ -64,8 +64,8 @@ export class EvaluationController {
         await teamService.store.save({ ...team, scores, score });
 
         if (TEAM_FRONTEND_URL) {
-            const renderFn = () =>
-                renderEvaluationSubmitted({ teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid }) });
+            const renderFn: LocalizedRenderer = i18n =>
+                renderEvaluationSubmitted({ teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid }) }, i18n);
 
             emailService.sendToTeamMembers(tid, undefined, renderFn);
             emailService.sendToHackathonStaff(name, renderFn);

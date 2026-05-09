@@ -25,7 +25,7 @@ export class OAuthCredential extends Base {
     @Column()
     accessToken: string;
 
-    @ManyToOne(() => User)
+    @ManyToOne(() => User, user => user.oauthCredentials)
     user: User;
 }
 
