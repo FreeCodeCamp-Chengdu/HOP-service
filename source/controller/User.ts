@@ -18,9 +18,11 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 
 import {
     BaseFilter,
+    Enrollment,
     HackathonListChunk,
     Role,
     SignInData,
+    Staff,
     User,
     UserFilter,
     UserHackathonType,
@@ -29,11 +31,11 @@ import {
 import {
     activityLogService,
     BaseService,
-    enrollmentService,
     hackathonService,
-    sessionService,
-    staffService
+    sessionService
 } from '../service';
+
+const UserHackathonTypeRegExp = Object.values(UserHackathonType).join('|');
 
 @JsonController('/user')
 export class UserController {
@@ -88,7 +90,7 @@ export class UserController {
         return sessionService.sign(await this.store.findOneBy({ id }));
     }
 
-    @Get('/:id/hackathon/:type')
+    @Get(`/:id/hackathon/:type(${UserHackathonTypeRegExp})`)
     @ResponseSchema(HackathonListChunk)
     async getHackathonListByType(
         @Param('id') id: number,
@@ -98,27 +100,37 @@ export class UserController {
         const skip = pageSize * (pageIndex - 1);
 
         if (type === UserHackathonType.Enrollee) {
-            const [enrollments, count] = await enrollmentService.store.findAndCount({
-                where: { createdBy: { id } },
-                relations: ['hackathon', 'hackathon.createdBy'],
-                order: { hackathon: { updatedAt: 'DESC' } },
-                skip,
-                take: pageSize
-            });
-            const list = enrollments.map(({ hackathon }) => hackathon);
+            const [list, count] = await hackathonService.store
+                .createQueryBuilder('hackathon')
+                .innerJoin(
+                    Enrollment,
+                    'enrollment',
+                    'enrollment.hackathonId = hackathon.id AND enrollment.createdById = :id',
+                    { id }
+                )
+                .leftJoinAndSelect('hackathon.createdBy', 'createdBy')
+                .orderBy('hackathon.updatedAt', 'DESC')
+                .skip(skip)
+                .take(pageSize)
+                .getManyAndCount();
 
             return { count, list };
         }
 
         if (type === UserHackathonType.Staff) {
-            const [staffs, count] = await staffService.store.findAndCount({
-                where: { user: { id } },
-                relations: ['hackathon', 'hackathon.createdBy'],
-                order: { hackathon: { updatedAt: 'DESC' } },
-                skip,
-                take: pageSize
-            });
-            const list = staffs.map(({ hackathon }) => hackathon);
+            const [list, count] = await hackathonService.store
+                .createQueryBuilder('hackathon')
+                .innerJoin(
+                    Staff,
+                    'staff',
+                    'staff.hackathonId = hackathon.id AND staff.userId = :id',
+                    { id }
+                )
+                .leftJoinAndSelect('hackathon.createdBy', 'createdBy')
+                .orderBy('hackathon.updatedAt', 'DESC')
+                .skip(skip)
+                .take(pageSize)
+                .getManyAndCount();
 
             return { count, list };
         }

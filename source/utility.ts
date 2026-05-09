@@ -33,6 +33,18 @@ export const {
 export const interpolateURL = (template: string, params: Record<string, string | number>) =>
     template.replace(/:([^/]+)/g, (match, key) => (key in params ? params[key] + '' : match));
 
+export const parseAcceptLanguage = (header: string): string[] =>
+    header
+        ? header
+              .split(',')
+              .map(part => {
+                  const [lang, q] = part.trim().split(';q=');
+                  return { lang: lang.trim(), q: q ? parseFloat(q) : 1 };
+              })
+              .sort((a, b) => b.q - a.q)
+              .map(({ lang }) => lang)
+        : [];
+
 export type NoEmptyFields<T> = {
     [K in keyof T as T[K] extends null | undefined | '' | [] ? never : K]: T[K];
 };

@@ -348,7 +348,7 @@ describe('Main business logic', () => {
         // Hackathon admin updates status to Online (simulating platform admin approval)
         const { data: approved } = await client.hackathon.hackathonControllerUpdateOne(
             testHackathon.name,
-            { status: 'online' as Hackathon['status'] },
+            { ...testHackathon, status: 'online' },
             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
         );
         expect(approved.status).toBe('online');

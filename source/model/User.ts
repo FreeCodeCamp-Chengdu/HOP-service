@@ -25,6 +25,13 @@ export enum Gender {
     Other = 2
 }
 
+export enum AccountOrigin {
+    Email = 'Email',
+    GitHub = 'GitHub',
+    GitLab = 'GitLab',
+    CNB = 'CNB'
+}
+
 export enum Role {
     Administrator,
     Manager,
@@ -116,6 +123,16 @@ export class User extends Base {
     @IsOptional()
     @Column('simple-json')
     roles: Role[];
+
+    @IsEnum(AccountOrigin)
+    @IsOptional()
+    @Column({ type: 'simple-enum', enum: AccountOrigin, nullable: true })
+    accountOrigin?: AccountOrigin;
+
+    @IsString({ each: true })
+    @IsOptional()
+    @Column({ type: 'simple-json', nullable: true })
+    languages?: string[];
 
     @IsJWT()
     @IsOptional()

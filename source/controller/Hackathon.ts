@@ -55,14 +55,15 @@ export class HackathonController {
         const updated = await this.service.editOne(old.id, newData, updatedBy);
 
         if (newData.status && newData.status !== old.status && HACKATHON_ADMIN_URL)
-            emailService.sendToHackathonStaff(
-                name,
-                `Hackathon Status Updated: ${old.displayName}`,
-                await renderHackathonStatusUpdated({
-                    displayName: old.displayName,
-                    newStatus: newData.status,
-                    hackathonUrl: interpolateURL(HACKATHON_ADMIN_URL, { name })
-                })
+            emailService.sendToHackathonStaffLocalized(name, locale =>
+                renderHackathonStatusUpdated(
+                    {
+                        displayName: old.displayName,
+                        newStatus: newData.status,
+                        hackathonUrl: interpolateURL(HACKATHON_ADMIN_URL, { name })
+                    },
+                    locale
+                )
             );
         return updated;
     }
@@ -128,12 +129,14 @@ export class HackathonController {
         );
 
         if (ADMIN_FRONTEND_URL)
-            emailService.sendToPlatformAdmins(
-                `New Hackathon Needs Review: ${saved.displayName}`,
-                await renderHackathonCreated({
-                    displayName: saved.displayName,
-                    reviewUrl: interpolateURL(ADMIN_FRONTEND_URL, { name: saved.name })
-                })
+            emailService.sendToPlatformAdminsLocalized(locale =>
+                renderHackathonCreated(
+                    {
+                        displayName: saved.displayName,
+                        reviewUrl: interpolateURL(ADMIN_FRONTEND_URL, { name: saved.name })
+                    },
+                    locale
+                )
             );
         return saved;
     }

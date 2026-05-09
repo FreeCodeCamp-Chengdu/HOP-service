@@ -92,14 +92,14 @@ export class TeamMemberController {
         });
 
         if (TEAM_ADMIN_URL)
-            emailService.sendToTeamMembers(
-                id,
-                TeamMemberRole.Admin,
-                `New Team Join Request`,
-                await renderTeamJoinRequest({
-                    applicantName: createdBy.name,
-                    teamUrl: interpolateURL(TEAM_ADMIN_URL, { name, id })
-                })
+            emailService.sendToTeamMembersLocalized(id, TeamMemberRole.Admin, locale =>
+                renderTeamJoinRequest(
+                    {
+                        applicantName: createdBy.name,
+                        teamUrl: interpolateURL(TEAM_ADMIN_URL, { name, id })
+                    },
+                    locale
+                )
             );
         return member;
     }

@@ -64,13 +64,14 @@ export class EvaluationController {
         await teamService.store.save({ ...team, scores, score });
 
         if (TEAM_FRONTEND_URL) {
-            const subject = `New Evaluation Submitted for Your Team`;
-            const html = await renderEvaluationSubmitted({
-                teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid })
-            });
+            const renderFn = (locale: string) =>
+                renderEvaluationSubmitted(
+                    { teamUrl: interpolateURL(TEAM_FRONTEND_URL, { name, tid }) },
+                    locale
+                );
 
-            emailService.sendToTeamMembers(tid, undefined, subject, html);
-            emailService.sendToHackathonStaff(name, subject, html);
+            emailService.sendToTeamMembersLocalized(tid, undefined, renderFn);
+            emailService.sendToHackathonStaffLocalized(name, renderFn);
         }
         return saved;
     }

@@ -6,3 +6,9 @@ export class OAuthSignInData {
 }
 
 export type CNBUser = Record<'id' | 'username' | 'nickname' | 'email' | 'avatar', string>;
+
+export interface CNBError {
+    errcode: number;
+    errmsg: string;
+    errparam: object;
+}
