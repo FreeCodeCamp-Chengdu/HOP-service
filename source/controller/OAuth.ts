@@ -67,12 +67,30 @@ export class OauthController {
         const { body } = await githubClient.get<GitHubUser>('user', {
             Authorization: `Bearer ${accessToken}`
         });
-        const { email, login, avatar_url } = body!;
+        const { login, avatar_url } = body!;
+        let email = body!.email as string | null | undefined;
 
-        if (!login || !email)
+        if (!login)
             throw new UnprocessableEntityError(
-                'GitHub user info is missing required fields (login, email). ' +
-                    'Ensure your GitHub account has a public verified email address.'
+                'GitHub user info is missing required fields (login). ' +
+                    'Ensure your GitHub account is accessible.'
+            );
+
+        if (!email) {
+            // Private-email users: /user returns null email; fetch from /user/emails
+            const { body: emailList } = await githubClient.get<
+                Array<{ email: string; primary: boolean; verified: boolean }>
+            >('user/emails', { Authorization: `Bearer ${accessToken}` });
+
+            email = (Array.isArray(emailList) ? emailList : []).find(
+                e => e.primary && e.verified
+            )?.email;
+        }
+
+        if (!email)
+            throw new UnprocessableEntityError(
+                'GitHub user has no verified email address. ' +
+                    'Please add and verify a primary email on your GitHub account.'
             );
 
         return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, login, {

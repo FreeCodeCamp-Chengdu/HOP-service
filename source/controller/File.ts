@@ -43,6 +43,8 @@ const upload = multer({
     }
 });
 
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 @Controller('/file')
 export class FileController {
     credentialStore = dataSource.getRepository(OAuthCredential);
@@ -80,9 +82,9 @@ export class FileController {
      *
      * Accepts a multipart/form-data request where each field key is a relative
      * file path within the target repository and each value is the corresponding
-     * file blob. Files are written to a temporary directory, then committed and
-     * pushed to the target Git repository using the authenticated user's stored
-     * OAuth credentials via `xgit upload` from the `git-utility` package.
+     * file blob. Files are written to a temporary directory, cloned into the
+     * target branch, committed and pushed using the authenticated user's stored
+     * OAuth credentials. Native git is used; no force-push is performed.
      *
      * @param noProtocolURL - Repository URL without the protocol prefix,
      *   e.g. `github.com/owner/repo`. The platform is inferred from the domain.
@@ -128,9 +130,11 @@ export class FileController {
         if (!uploadedFiles.length)
             throw Object.assign(new Error('No files provided in FormData'), { status: 400 });
 
-        // 4. Reconstruct files in a dedicated temp working directory,
-        //    using the FormData field name as the relative path inside the repo
+        // 4. Reconstruct files in a dedicated temp working directory
         const workDir = await fs.mkdtemp(join(tmpdir(), 'hop-git-upload-'));
+        // askpass lives in a separate dir so it is never inside the cloned tree
+        const credDir = await fs.mkdtemp(join(tmpdir(), 'hop-git-cred-'));
+        const cloneDir = await fs.mkdtemp(join(tmpdir(), 'hop-git-clone-'));
 
         try {
             await Promise.all(
@@ -153,12 +157,16 @@ export class FileController {
                 })
             );
 
-            // 5. Build clean HTTPS remote URL and provide credentials via Git's
-            //    askpass protocol so the OAuth token is not exposed in argv.
+            // 5. Build clean HTTPS remote URL; askpass script lives in credDir (not
+            //    workDir/cloneDir) so it is never staged by `git add .`
             const domain = OAuthPlatformDomain[platform];
-            const repoPath = noProtocolURL.replace(new RegExp(`^${domain}/`), '');
+            const repoPath = noProtocolURL.replace(
+                new RegExp(`^${escapeRegExp(domain)}/`),
+                ''
+            );
             const repoURL = `https://${domain}/${repoPath}`;
-            const askPassPath = join(workDir, '.git-askpass.sh');
+            const askPassPath = join(credDir, 'git-askpass.sh');
+
             await fs.writeFile(
                 askPassPath,
                 '#!/bin/sh\n' +
@@ -170,32 +178,74 @@ export class FileController {
                 { mode: 0o700 }
             );
 
-            // 6. Push via git-utility CLI: xgit upload <folder> <url> <branch>
-            await execFileAsync('xgit', ['upload', workDir, repoURL, 'main'], {
-                env: {
-                    ...process.env,
-                    GIT_ASKPASS: askPassPath,
-                    GIT_TERMINAL_PROMPT: '0',
-                    GIT_USERNAME: credential.username,
-                    GIT_PASSWORD: credential.accessToken
-                }
-            });
+            const gitEnv = {
+                ...process.env,
+                GIT_ASKPASS: askPassPath,
+                GIT_TERMINAL_PROMPT: '0',
+                GIT_USERNAME: credential.username,
+                GIT_PASSWORD: credential.accessToken
+            };
+
+            const git = (...args: string[]) =>
+                execFileAsync('git', args, { env: gitEnv });
+
+            // 6. Clone target branch into cloneDir; fall back to default branch and
+            //    create the branch locally if it does not exist on the remote yet.
+            const targetBranch = 'main';
+            let branchExisted = true;
+
+            try {
+                await git('clone', '--depth=1', '-b', targetBranch, repoURL, cloneDir);
+            } catch (_unused) {
+                branchExisted = false;
+                // Clear any partial clone artifacts before retrying
+                await fs.rm(cloneDir, { recursive: true, force: true });
+                await fs.mkdir(cloneDir);
+                await git('clone', '--depth=1', repoURL, cloneDir);
+            }
+
+            if (!branchExisted)
+                await git('-C', cloneDir, 'checkout', '-b', targetBranch);
+
+            // 7. Overlay uploaded files onto the clone, then commit and push normally
+            //    (no -f / --force; branch is created non-destructively when new)
+            await fs.cp(workDir, cloneDir, { recursive: true });
+
+            await git('-C', cloneDir, 'add', '.');
+            await git(
+                '-C',
+                cloneDir,
+                '-c',
+                'user.name=HOP Service',
+                '-c',
+                'user.email=noreply@hop.service',
+                'commit',
+                '-m',
+                'upload via HOP service'
+            );
+            await git('-C', cloneDir, 'push', 'origin', targetBranch);
         } finally {
             await fs.rm(workDir, { recursive: true, force: true });
+            await fs.rm(credDir, { recursive: true, force: true });
+            await fs.rm(cloneDir, { recursive: true, force: true });
             await Promise.allSettled(uploadedFiles.map(f => fs.rm(f.path, { force: true })));
         }
     }
 
     /**
-     * Resolve which OAuthPlatform corresponds to the given no-protocol URL
-     * by checking each platform's primary domain prefix (OAuthPlatformDomain).
+     * Resolve which OAuthPlatform corresponds to the given no-protocol URL.
+     * Requires exact format: domain/owner/repo or domain/owner/repo.git
+     * Rejects lookalike domains (e.g. github.com.evil/...).
      */
     private resolvePlatform(noProtocolURL: string): OAuthPlatform | null {
         for (const [platform, domain] of Object.entries(OAuthPlatformDomain) as [
             OAuthPlatform,
             string
         ][]) {
-            if (noProtocolURL.startsWith(domain)) return platform;
+            const pattern = new RegExp(
+                `^${escapeRegExp(domain)}/[^/]+/[^/]+(\.git)?$`
+            );
+            if (pattern.test(noProtocolURL)) return platform;
         }
         return null;
     }
