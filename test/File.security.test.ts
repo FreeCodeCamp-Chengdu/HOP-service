@@ -1,18 +1,9 @@
 /**
- * Unit tests for upload-path validation and repo-URL regex logic in FileController.
- * These tests exercise pure functions extracted from the controller without
- * spinning up a server or touching the database.
+ * Unit tests for upload-path validation and repo-URL regex logic.
+ * Imports the exported helpers from file-validation.ts — no local duplicates.
  */
 
-const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-function buildRepoPattern(domain: string): RegExp {
-    return new RegExp(`^${escapeRegExp(domain)}/[^/]+/[^/]+(?:\\.git)?$`);
-}
-
-function hasGitSegment(rel: string): boolean {
-    return rel.split(/[\\/]/).some(seg => seg === '.git');
-}
+import { buildRepoPattern, hasGitSegment } from '../source/controller/file-validation';
 
 describe('Upload path validation — .git segment blocking', () => {
     it('rejects bare .git', () => {
@@ -51,23 +42,12 @@ describe('Repo URL regex — github.com', () => {
         expect(pattern.test('github.com.evil/owner/repo')).toBe(false);
     });
 
-    it('does not match repoXgit via wildcard dot bug', () => {
-        // With the fixed escape (?:\\.git)?, the .git group matches only a
-        // literal dot — not an arbitrary character. repoXgit is still accepted
-        // by [^/]+, but at least the optional suffix group no longer silently
-        // widens via a wildcard dot.
-        const buggySuffix = new RegExp(`^${escapeRegExp('github.com')}/[^/]+/[^/]+(.git)?$`);
-        const fixedSuffix = buildRepoPattern('github.com');
+    it('rejects repoXgit (suffix ending in git that is not .git)', () => {
+        expect(pattern.test('github.com/owner/repoXgit')).toBe(false);
+    });
 
-        // Both match repoXgit because [^/]+ handles it; the point is that the
-        // fixed pattern does NOT use a wildcard dot in the optional suffix.
-        const source = fixedSuffix.source;
-        expect(source).toContain('(?:\\.git)?');
-        expect(source).not.toContain('(.git)');
-
-        // The buggy version lets (.git) match a non-dot character at end:
-        expect(buggySuffix.test('github.com/owner/repoXgit')).toBe(true); // via [^/]+
-        expect(fixedSuffix.test('github.com/owner/repoXgit')).toBe(true); // via [^/]+, same
+    it('rejects repogit (bare git suffix without dot)', () => {
+        expect(pattern.test('github.com/owner/repogit')).toBe(false);
     });
 
     it('rejects empty owner segment', () => {

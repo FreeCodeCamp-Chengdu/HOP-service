@@ -30,6 +30,7 @@ import {
     User
 } from '../model';
 import { AWS_S3_BUCKET, AWS_S3_PUBLIC_HOST, s3Client } from '../utility';
+import { buildRepoPattern, escapeRegExp, hasGitSegment } from './file-validation';
 
 const execFileAsync = promisify(execFile);
 const upload = multer({
@@ -42,8 +43,6 @@ const upload = multer({
         fieldSize: 1 * 1024 * 1024
     }
 });
-
-const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 @Controller('/file')
 export class FileController {
@@ -147,7 +146,7 @@ export class FileController {
                             { status: 400 }
                         );
 
-                    if (rel.split(/[\\/]/).some(seg => seg === '.git'))
+                    if (hasGitSegment(rel))
                         throw Object.assign(
                             new Error(`Invalid file path: ${file.fieldname}`),
                             { status: 400 }
@@ -251,10 +250,7 @@ export class FileController {
             OAuthPlatform,
             string
         ][]) {
-            const pattern = new RegExp(
-                `^${escapeRegExp(domain)}/[^/]+/[^/]+(?:\\.git)?$`
-            );
-            if (pattern.test(noProtocolURL)) return platform;
+            if (buildRepoPattern(domain).test(noProtocolURL)) return platform;
         }
         return null;
     }
