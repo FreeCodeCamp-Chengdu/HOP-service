@@ -32,6 +32,7 @@ export class OauthController {
         email: string,
         platform: OAuthPlatform,
         accessToken: string,
+        username: string,
         profile: Partial<Pick<User, 'name' | 'avatar' | 'languages'>>
     ) {
         const user =
@@ -51,7 +52,7 @@ export class OauthController {
             platform,
             user: { id: user.id }
         });
-        await this.credentialStore.save({ ...existing, platform, accessToken, user });
+        await this.credentialStore.save({ ...existing, platform, accessToken, username, user });
 
         return sessionService.sign(user);
     }
@@ -66,9 +67,33 @@ export class OauthController {
         const { body } = await githubClient.get<GitHubUser>('user', {
             Authorization: `Bearer ${accessToken}`
         });
-        const { email, login, avatar_url } = body!;
+        const { login, avatar_url } = body!;
+        let email = body!.email as string | null | undefined;
 
-        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, {
+        if (!login)
+            throw new UnprocessableEntityError(
+                'GitHub user info is missing required fields (login). ' +
+                    'Ensure your GitHub account is accessible.'
+            );
+
+        if (!email) {
+            // Private-email users: /user returns null email; fetch from /user/emails
+            const { body: emailList } = await githubClient.get<
+                Array<{ email: string; primary: boolean; verified: boolean }>
+            >('user/emails', { Authorization: `Bearer ${accessToken}` });
+
+            email = (Array.isArray(emailList) ? emailList : []).find(
+                e => e.primary && e.verified
+            )?.email;
+        }
+
+        if (!email)
+            throw new UnprocessableEntityError(
+                'GitHub user has no verified email address. ' +
+                    'Please add and verify a primary email on your GitHub account.'
+            );
+
+        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, login, {
             name: login,
             avatar: avatar_url,
             languages: parseLanguageHeader(acceptLanguage ?? '')
@@ -100,7 +125,7 @@ export class OauthController {
             throw new UnprocessableEntityError(
                 'CNB user info is missing required fields (username, email)'
             );
-        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, username, {
             name: nickname || username,
             avatar,
             languages: parseLanguageHeader(acceptLanguage ?? '')
