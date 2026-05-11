@@ -32,6 +32,7 @@ export class OauthController {
         email: string,
         platform: OAuthPlatform,
         accessToken: string,
+        userName: string,
         profile: Partial<Pick<User, 'name' | 'avatar' | 'languages'>>
     ) {
         const user =
@@ -39,7 +40,10 @@ export class OauthController {
             (await sessionService.signUp({ email, password: accessToken }));
         const { name, avatar, languages } = user;
         const oldProfile = { name, avatar, languages: languages?.length ? languages : [] };
-        const newProfile = { ...profile, languages: profile.languages?.length ? profile.languages : [] };
+        const newProfile = {
+            ...profile,
+            languages: profile.languages?.length ? profile.languages : []
+        };
 
         if (!isDeepStrictEqual(oldProfile, newProfile)) {
             await this.userStore.save(Object.assign(user, newProfile));
@@ -51,7 +55,7 @@ export class OauthController {
             platform,
             user: { id: user.id }
         });
-        await this.credentialStore.save({ ...existing, platform, accessToken, user });
+        await this.credentialStore.save({ ...existing, platform, userName, accessToken, user });
 
         return sessionService.sign(user);
     }
@@ -68,7 +72,7 @@ export class OauthController {
         });
         const { email, login, avatar_url } = body!;
 
-        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, login, {
             name: login,
             avatar: avatar_url,
             languages: parseLanguageHeader(acceptLanguage ?? '')
@@ -100,7 +104,7 @@ export class OauthController {
             throw new UnprocessableEntityError(
                 'CNB user info is missing required fields (username, email)'
             );
-        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, username, {
             name: nickname || username,
             avatar,
             languages: parseLanguageHeader(acceptLanguage ?? '')

@@ -16,11 +16,21 @@ export enum OAuthPlatform {
     CNB = 'CNB'
 }
 
+export const OAuthPlatformDomainMap: Record<OAuthPlatform, string> = {
+    [OAuthPlatform.GitHub]: 'github.com',
+    [OAuthPlatform.GitLab]: 'gitlab.com',
+    [OAuthPlatform.CNB]: 'cnb.cool'
+};
+
 @Entity()
 export class OAuthCredential extends Base {
     @IsEnum(OAuthPlatform)
     @Column({ type: 'simple-enum', enum: OAuthPlatform })
     platform: OAuthPlatform;
+
+    @IsString()
+    @Column({ default: '' })
+    userName: string;
 
     @IsString()
     @Column()

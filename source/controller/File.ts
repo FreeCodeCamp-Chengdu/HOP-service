@@ -1,30 +1,51 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import multer from '@koa/multer';
+import { mkdirSync } from 'fs';
+import { rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { resolve } from 'path';
 import {
     Authorized,
+    BadRequestError,
     Controller,
     CurrentUser,
     Delete,
     HttpCode,
     OnUndefined,
     Param,
-    Post
+    Post,
+    Put,
+    Req,
+    UseBefore
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { SignedLink, User } from '../model';
+import { GitUploadResult, SignedLink, User } from '../model';
+import { gitFileService, IncomingGitFile } from '../service';
 import { AWS_S3_BUCKET, AWS_S3_PUBLIC_HOST, s3Client } from '../utility';
+
+const gitUploadDirectory = resolve(tmpdir(), 'hop-service-upload');
+
+mkdirSync(gitUploadDirectory, { recursive: true });
+
+const gitUploadMiddleware = multer({
+    dest: gitUploadDirectory,
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 20
+    }
+});
 
 @Controller('/file')
 export class FileController {
+    gitFileService = gitFileService;
+
     @Post('/signed-link/:path(.*)')
     @Authorized()
     @HttpCode(201)
     @ResponseSchema(SignedLink)
-    async createSignedLink(
-        @CurrentUser() { id }: User,
-        @Param('path') path: string
-    ) {
+    async createSignedLink(@CurrentUser() { id }: User, @Param('path') path: string) {
         const Key = `user/${id}/${path}`;
 
         const command = new PutObjectCommand({ Bucket: AWS_S3_BUCKET, Key });
@@ -43,5 +64,28 @@ export class FileController {
         const command = new DeleteObjectCommand({ Bucket: AWS_S3_BUCKET, Key });
 
         await s3Client.send(command);
+    }
+
+    @Put('/Git/:noProtocolURL(.*)')
+    @Authorized()
+    @HttpCode(201)
+    @ResponseSchema(GitUploadResult)
+    @UseBefore(gitUploadMiddleware.any())
+    async uploadGitFiles(
+        @CurrentUser() { id }: User,
+        @Param('noProtocolURL') noProtocolURL: string,
+        @Req() request: { files?: IncomingGitFile[] }
+    ) {
+        const files = Array.isArray(request.files)
+            ? request.files.map(({ fieldname, path }) => ({ fieldname, path }))
+            : [];
+
+        if (!files.length) throw new BadRequestError('No file uploaded');
+
+        try {
+            return await this.gitFileService.uploadFilesToRepository(id, noProtocolURL, files);
+        } finally {
+            await Promise.all(files.map(({ path }) => rm(path, { force: true })));
+        }
     }
 }
