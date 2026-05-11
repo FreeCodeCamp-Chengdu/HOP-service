@@ -4,7 +4,7 @@ import { execFile } from 'child_process';
 import { promises as fs } from 'fs';
 import multer from '@koa/multer';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { dirname, isAbsolute, join, relative, resolve } from 'path';
 import { promisify } from 'util';
 import {
     Authorized,
@@ -32,7 +32,16 @@ import {
 import { AWS_S3_BUCKET, AWS_S3_PUBLIC_HOST, s3Client } from '../utility';
 
 const execFileAsync = promisify(execFile);
-const upload = multer({ dest: tmpdir() });
+const upload = multer({
+    dest: tmpdir(),
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 20,
+        fields: 20,
+        parts: 40,
+        fieldSize: 1 * 1024 * 1024
+    }
+});
 
 @Controller('/file')
 export class FileController {
@@ -111,9 +120,7 @@ export class FileController {
             );
 
         // 3. Parse the multipart/form-data upload via @koa/multer
-        await new Promise<void>((resolve, reject) =>
-            upload.any()(ctx as any, {} as any, (err: unknown) => (err ? reject(err) : resolve()))
-        );
+        await upload.any()(ctx as any, () => Promise.resolve());
 
         const uploadedFiles: Array<{ fieldname: string; path: string }> =
             (ctx.request as any).files ?? [];
@@ -128,8 +135,16 @@ export class FileController {
         try {
             await Promise.all(
                 uploadedFiles.map(async file => {
-                    const destPath = join(workDir, file.fieldname);
-                    const destDir = destPath.substring(0, destPath.lastIndexOf('/'));
+                    const rel = relative(workDir, resolve(workDir, file.fieldname));
+
+                    if (!rel || rel.startsWith('..') || isAbsolute(rel))
+                        throw Object.assign(
+                            new Error(`Invalid file path: ${file.fieldname}`),
+                            { status: 400 }
+                        );
+
+                    const destPath = resolve(workDir, rel);
+                    const destDir = dirname(destPath);
 
                     if (destDir && destDir !== workDir)
                         await fs.mkdir(destDir, { recursive: true });
@@ -138,16 +153,36 @@ export class FileController {
                 })
             );
 
-            // 5. Build authenticated HTTPS remote URL:
-            //    https://<username>:<token>@<domain>/<owner>/<repo>
+            // 5. Build clean HTTPS remote URL and provide credentials via Git's
+            //    askpass protocol so the OAuth token is not exposed in argv.
             const domain = OAuthPlatformDomain[platform];
             const repoPath = noProtocolURL.replace(new RegExp(`^${domain}/`), '');
-            const repoURL = `https://${credential.username}:${credential.accessToken}@${domain}/${repoPath}`;
+            const repoURL = `https://${domain}/${repoPath}`;
+            const askPassPath = join(workDir, '.git-askpass.sh');
+            await fs.writeFile(
+                askPassPath,
+                '#!/bin/sh\n' +
+                    'case "$1" in\n' +
+                    '  *Username*) printf "%s\\n" "$GIT_USERNAME" ;;\n' +
+                    '  *Password*) printf "%s\\n" "$GIT_PASSWORD" ;;\n' +
+                    '  *) printf "\\n" ;;\n' +
+                    'esac\n',
+                { mode: 0o700 }
+            );
 
             // 6. Push via git-utility CLI: xgit upload <folder> <url> <branch>
-            await execFileAsync('xgit', ['upload', workDir, repoURL, 'main']);
+            await execFileAsync('xgit', ['upload', workDir, repoURL, 'main'], {
+                env: {
+                    ...process.env,
+                    GIT_ASKPASS: askPassPath,
+                    GIT_TERMINAL_PROMPT: '0',
+                    GIT_USERNAME: credential.username,
+                    GIT_PASSWORD: credential.accessToken
+                }
+            });
         } finally {
             await fs.rm(workDir, { recursive: true, force: true });
+            await Promise.allSettled(uploadedFiles.map(f => fs.rm(f.path, { force: true })));
         }
     }
 

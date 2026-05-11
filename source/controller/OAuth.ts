@@ -69,6 +69,12 @@ export class OauthController {
         });
         const { email, login, avatar_url } = body!;
 
+        if (!login || !email)
+            throw new UnprocessableEntityError(
+                'GitHub user info is missing required fields (login, email). ' +
+                    'Ensure your GitHub account has a public verified email address.'
+            );
+
         return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, login, {
             name: login,
             avatar: avatar_url,
