@@ -1,9 +1,11 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { execFile } from 'child_process';
 import { promises as fs } from 'fs';
 import multer from '@koa/multer';
 import { tmpdir } from 'os';
 import { join } from 'path';
+import { promisify } from 'util';
 import {
     Authorized,
     Controller,
@@ -29,6 +31,7 @@ import {
 } from '../model';
 import { AWS_S3_BUCKET, AWS_S3_PUBLIC_HOST, s3Client } from '../utility';
 
+const execFileAsync = promisify(execFile);
 const upload = multer({ dest: tmpdir() });
 
 @Controller('/file')
@@ -142,9 +145,7 @@ export class FileController {
             const repoURL = `https://${credential.username}:${credential.accessToken}@${domain}/${repoPath}`;
 
             // 6. Push via git-utility CLI: xgit upload <folder> <url> <branch>
-            const { $ } = await import('zx');
-            $.verbose = false;
-            await $`xgit upload ${workDir} ${repoURL} main`;
+            await execFileAsync('xgit', ['upload', workDir, repoURL, 'main']);
         } finally {
             await fs.rm(workDir, { recursive: true, force: true });
         }
