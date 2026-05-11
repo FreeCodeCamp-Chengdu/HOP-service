@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsString, ValidateNested } from 'class-validator';
+import { IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Column, Entity, ManyToOne } from 'typeorm';
 
 import { Base } from './Base';
@@ -16,6 +16,16 @@ export enum OAuthPlatform {
     CNB = 'CNB'
 }
 
+/**
+ * Maps each OAuthPlatform to its primary Git hosting domain.
+ * Used to derive credential lookups from a repository URL.
+ */
+export const OAuthPlatformDomain: Record<OAuthPlatform, string> = {
+    [OAuthPlatform.GitHub]: 'github.com',
+    [OAuthPlatform.GitLab]: 'gitlab.com',
+    [OAuthPlatform.CNB]: 'cnb.cool'
+};
+
 @Entity()
 export class OAuthCredential extends Base {
     @IsEnum(OAuthPlatform)
@@ -25,6 +35,16 @@ export class OAuthCredential extends Base {
     @IsString()
     @Column()
     accessToken: string;
+
+    /**
+     * The username on the third-party platform (e.g. GitHub login, CNB username).
+     * Combined with accessToken to construct authenticated Git HTTP URLs:
+     * https://<username>:<accessToken>@<domain>/<owner>/<repo>.git
+     */
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
+    username?: string;
 
     @Type(() => User)
     @ValidateNested()

@@ -32,6 +32,7 @@ export class OauthController {
         email: string,
         platform: OAuthPlatform,
         accessToken: string,
+        username: string,
         profile: Partial<Pick<User, 'name' | 'avatar' | 'languages'>>
     ) {
         const user =
@@ -51,7 +52,7 @@ export class OauthController {
             platform,
             user: { id: user.id }
         });
-        await this.credentialStore.save({ ...existing, platform, accessToken, user });
+        await this.credentialStore.save({ ...existing, platform, accessToken, username, user });
 
         return sessionService.sign(user);
     }
@@ -68,7 +69,7 @@ export class OauthController {
         });
         const { email, login, avatar_url } = body!;
 
-        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, login, {
             name: login,
             avatar: avatar_url,
             languages: parseLanguageHeader(acceptLanguage ?? '')
@@ -100,7 +101,7 @@ export class OauthController {
             throw new UnprocessableEntityError(
                 'CNB user info is missing required fields (username, email)'
             );
-        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, username, {
             name: nickname || username,
             avatar,
             languages: parseLanguageHeader(acceptLanguage ?? '')
