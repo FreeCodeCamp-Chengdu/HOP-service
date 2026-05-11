@@ -147,6 +147,12 @@ export class FileController {
                             { status: 400 }
                         );
 
+                    if (rel.split(/[\\/]/).some(seg => seg === '.git'))
+                        throw Object.assign(
+                            new Error(`Invalid file path: ${file.fieldname}`),
+                            { status: 400 }
+                        );
+
                     const destPath = resolve(workDir, rel);
                     const destDir = dirname(destPath);
 
@@ -210,6 +216,9 @@ export class FileController {
             // 7. Overlay uploaded files onto the clone, then commit and push normally
             //    (no -f / --force; branch is created non-destructively when new)
             await fs.cp(workDir, cloneDir, { recursive: true });
+            // Restore remote URL after copy as defense-in-depth against any
+            // residual .git/config manipulation
+            await git('-C', cloneDir, 'remote', 'set-url', 'origin', repoURL);
 
             await git('-C', cloneDir, 'add', '.');
             await git(
@@ -243,7 +252,7 @@ export class FileController {
             string
         ][]) {
             const pattern = new RegExp(
-                `^${escapeRegExp(domain)}/[^/]+/[^/]+(\.git)?$`
+                `^${escapeRegExp(domain)}/[^/]+/[^/]+(?:\\.git)?$`
             );
             if (pattern.test(noProtocolURL)) return platform;
         }
