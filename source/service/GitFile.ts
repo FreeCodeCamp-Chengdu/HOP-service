@@ -102,8 +102,13 @@ export class GitFileService {
             user: { id: userId }
         });
 
-        if (!credential?.accessToken || !credential.userName)
+        if (!credential?.accessToken)
             throw new NotFoundError(`${platform} OAuth credential is not found`);
+
+        if (!credential.userName)
+            throw new NotFoundError(
+                `${platform} OAuth credential is missing userName; please sign in again`
+            );
 
         return {
             repositoryURL: `https://${noProtocolURL}`,
@@ -127,13 +132,16 @@ export class GitFileService {
     protected resolveRepositoryPath(repositoryFolder: string, fieldname: string) {
         if (!fieldname) throw new BadRequestError('Uploaded file path is required');
 
-        const targetPath = resolve(repositoryFolder, fieldname.replace(/\\/g, '/'));
+        const normalized = fieldname.replace(/\\/g, '/').replace(/^\/+/, '');
+        const segments = normalized.split('/').filter(Boolean);
+
+        if (segments.some(segment => segment.toLowerCase() === '.git'))
+            throw new BadRequestError(`Invalid repository path: ${fieldname}`);
+
+        const targetPath = resolve(repositoryFolder, normalized);
         const outside = relative(repositoryFolder, targetPath);
 
         if (outside.startsWith('..') || outside.includes(`..${sep}`) || outside === '')
-            throw new BadRequestError(`Invalid repository path: ${fieldname}`);
-
-        if (outside.split(sep).some(segment => segment === '.git'))
             throw new BadRequestError(`Invalid repository path: ${fieldname}`);
 
         return targetPath;

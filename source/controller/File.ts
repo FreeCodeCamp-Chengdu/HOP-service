@@ -1,7 +1,9 @@
 import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import multer from '@koa/multer';
+import { mkdirSync } from 'fs';
 import { rm } from 'fs/promises';
+import { tmpdir } from 'os';
 import { resolve } from 'path';
 import {
     Authorized,
@@ -23,8 +25,12 @@ import { GitUploadResult, SignedLink, User } from '../model';
 import { gitFileService, IncomingGitFile } from '../service';
 import { AWS_S3_BUCKET, AWS_S3_PUBLIC_HOST, s3Client } from '../utility';
 
+const gitUploadDirectory = resolve(tmpdir(), 'hop-service-upload');
+
+mkdirSync(gitUploadDirectory, { recursive: true });
+
 const gitUploadMiddleware = multer({
-    dest: resolve(process.env.TEMP || process.env.TMP || '.', 'hop-service-upload'),
+    dest: gitUploadDirectory,
     limits: {
         fileSize: 10 * 1024 * 1024,
         files: 20

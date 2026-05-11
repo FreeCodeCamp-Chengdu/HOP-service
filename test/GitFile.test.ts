@@ -154,11 +154,30 @@ describe('GitFileService', () => {
 
             await expect(
                 service.uploadFilesToRepository(7, 'github.com/freeCodeCamp-Chengdu/HOP-service', [
-                    { fieldname: '.git/config', path: incomingFile }
+                    { fieldname: 'docs/.GIT/config', path: incomingFile }
                 ])
             ).rejects.toThrow('Invalid repository path');
         } finally {
             await rm(tempRoot, { recursive: true, force: true });
         }
+    });
+
+    it('reports stale OAuth credentials that are missing a username', async () => {
+        const service = new GitFileService({
+            credentialStore: {
+                findOneBy: jest.fn().mockResolvedValue({
+                    platform: OAuthPlatform.GitHub,
+                    userName: '',
+                    accessToken: 'secret-token'
+                })
+            },
+            runCommand: jest.fn()
+        });
+
+        await expect(
+            service.uploadFilesToRepository(7, 'github.com/freeCodeCamp-Chengdu/HOP-service', [
+                { fieldname: 'README.md', path: 'README.md' }
+            ])
+        ).rejects.toThrow('OAuth credential is missing userName; please sign in again');
     });
 });
