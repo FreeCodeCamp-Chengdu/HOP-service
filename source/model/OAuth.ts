@@ -16,6 +16,17 @@ export enum OAuthPlatform {
     CNB = 'CNB'
 }
 
+export const OAuthPlatformHostMap: Record<OAuthPlatform, string> = {
+    [OAuthPlatform.GitHub]: 'github.com',
+    [OAuthPlatform.GitLab]: 'gitlab.com',
+    [OAuthPlatform.CNB]: 'cnb.cool'
+};
+
+export const resolveOAuthPlatformByHost = (host: string) =>
+    (Object.entries(OAuthPlatformHostMap).find(
+        ([, domain]) => host === domain || host.endsWith(`.${domain}`)
+    )?.[0] as OAuthPlatform | undefined);
+
 @Entity()
 export class OAuthCredential extends Base {
     @IsEnum(OAuthPlatform)
@@ -25,6 +36,10 @@ export class OAuthCredential extends Base {
     @IsString()
     @Column()
     accessToken: string;
+
+    @IsString()
+    @Column()
+    username: string;
 
     @Type(() => User)
     @ValidateNested()

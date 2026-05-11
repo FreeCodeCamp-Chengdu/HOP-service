@@ -119,6 +119,9 @@ importers:
       web-utility:
         specifier: ^4.6.6
         version: 4.6.6(typescript@5.9.3)
+      zx:
+        specifier: ^8.8.5
+        version: 8.8.5
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -138,6 +141,9 @@ importers:
       '@types/koa-logger':
         specifier: ^3.1.5
         version: 3.1.5
+      '@types/multer':
+        specifier: 2.1.0
+        version: 2.1.0
       '@types/node':
         specifier: ^24.12.3
         version: 24.12.3
@@ -1331,6 +1337,9 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/multer@2.1.0':
+    resolution: {integrity: sha512-zYZb0+nJhOHtPpGDb3vqPjwpdeGlGC157VpkqNQL+UU2qwoacoQ7MpsAmUptI/0Oa127X32JzWDqQVEXp2RcIA==}
 
   '@types/node@22.19.18':
     resolution: {integrity: sha512-9v00a+dn2yWVsYDEunWC4g/TcRKVq3r8N5FuZp7u0SGrPvdN9c2yXI9bBuf5Fl0hNCb+QTIePTn5pJs2pwBOQQ==}
@@ -5801,6 +5810,10 @@ snapshots:
   '@types/lodash@4.17.24': {}
 
   '@types/ms@2.1.0': {}
+
+  '@types/multer@2.1.0':
+    dependencies:
+      '@types/express': 5.0.6
 
   '@types/node@22.19.18':
     dependencies:

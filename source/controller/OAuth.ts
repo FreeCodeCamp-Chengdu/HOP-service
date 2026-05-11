@@ -31,15 +31,27 @@ export class OauthController {
     private async syncProfile(
         email: string,
         platform: OAuthPlatform,
-        accessToken: string,
-        profile: Partial<Pick<User, 'name' | 'avatar' | 'languages'>>
+        profile: Partial<Pick<User, 'name' | 'avatar' | 'languages' | 'token'>>
     ) {
+        const { token: accessToken, name, ...newProfileData } = profile;
+        if (!accessToken)
+            throw new UnprocessableEntityError(
+                `${platform} user info is missing required field (accessToken)`
+            );
+        if (!name)
+            throw new UnprocessableEntityError(
+                `${platform} user info is missing required field (username)`
+            );
+
         const user =
             (await this.userStore.findOneBy({ email })) ||
             (await sessionService.signUp({ email, password: accessToken }));
-        const { name, avatar, languages } = user;
-        const oldProfile = { name, avatar, languages: languages?.length ? languages : [] };
-        const newProfile = { ...profile, languages: profile.languages?.length ? profile.languages : [] };
+        const { name: oldName, avatar, languages } = user;
+        const oldProfile = { name: oldName, avatar, languages: languages?.length ? languages : [] };
+        const newProfile = {
+            ...newProfileData,
+            languages: newProfileData.languages?.length ? newProfileData.languages : []
+        };
 
         if (!isDeepStrictEqual(oldProfile, newProfile)) {
             await this.userStore.save(Object.assign(user, newProfile));
@@ -51,7 +63,7 @@ export class OauthController {
             platform,
             user: { id: user.id }
         });
-        await this.credentialStore.save({ ...existing, platform, accessToken, user });
+        await this.credentialStore.save({ ...existing, platform, accessToken, username: name, user });
 
         return sessionService.sign(user);
     }
@@ -68,10 +80,11 @@ export class OauthController {
         });
         const { email, login, avatar_url } = body!;
 
-        return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, {
+        return this.syncProfile(email, OAuthPlatform.GitHub, {
             name: login,
             avatar: avatar_url,
-            languages: parseLanguageHeader(acceptLanguage ?? '')
+            languages: parseLanguageHeader(acceptLanguage ?? ''),
+            token: accessToken
         });
     }
 
@@ -94,16 +107,17 @@ export class OauthController {
             throw new HttpError(response.status, response.statusText);
         }
 
-        const { username, nickname, email, avatar } = (await response.json()) as CNBUser;
+        const { username, email, avatar } = (await response.json()) as CNBUser;
 
         if (!username || !email)
             throw new UnprocessableEntityError(
                 'CNB user info is missing required fields (username, email)'
             );
-        return this.syncProfile(email, OAuthPlatform.CNB, accessToken, {
-            name: nickname || username,
+        return this.syncProfile(email, OAuthPlatform.CNB, {
+            name: username,
             avatar,
-            languages: parseLanguageHeader(acceptLanguage ?? '')
+            languages: parseLanguageHeader(acceptLanguage ?? ''),
+            token: accessToken
         });
     }
 }
