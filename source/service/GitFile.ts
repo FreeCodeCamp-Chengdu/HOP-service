@@ -1,4 +1,4 @@
-import { execFile } from 'child_process';
+import { execFile, ExecFileOptions } from 'child_process';
 import { copyFile, mkdir, mkdtemp, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { dirname, relative, resolve, sep } from 'path';
@@ -25,7 +25,11 @@ interface CommandResult {
     stdout: string;
 }
 
-type RunCommand = (command: string, args: (string | undefined)[]) => Promise<CommandResult>;
+type RunCommand = (
+    command: string,
+    args: (string | undefined)[],
+    options?: ExecFileOptions
+) => Promise<CommandResult>;
 
 export interface GitFileServiceOptions {
     credentialStore: Pick<Repository<OAuthCredential>, 'findOneBy'>;
@@ -52,14 +56,18 @@ export class GitFileService {
         this.tempRoot = tempRoot;
     }
 
-    static async runCommand(command: string, args: (string | undefined)[]) {
+    static async runCommand(
+        command: string,
+        args: (string | undefined)[],
+        options: ExecFileOptions = {}
+    ) {
         const { stdout } = await execFileAsync(
             command,
-            args.filter((value): value is string => !!value),
-            { maxBuffer: 10 * 1024 * 1024 }
+            args.filter((value): value is string => value !== undefined),
+            { maxBuffer: 10 * 1024 * 1024, ...options }
         );
 
-        return { stdout };
+        return { stdout: stdout.toString() };
     }
 
     protected getPlatformByHost(host: string) {
@@ -72,7 +80,18 @@ export class GitFileService {
         return matched[0] as OAuthPlatform;
     }
 
-    protected async getAuthenticatedRepositoryURL(userId: number, noProtocolURL: string) {
+    protected getGitAuthenticationEnv(host: string, userName: string, accessToken: string) {
+        return {
+            GIT_CONFIG_COUNT: '1',
+            GIT_CONFIG_KEY_0: `http.https://${host}/.extraheader`,
+            GIT_CONFIG_VALUE_0: `AUTHORIZATION: Basic ${Buffer.from(
+                `${userName}:${accessToken}`
+            ).toString('base64')}`,
+            GIT_TERMINAL_PROMPT: '0'
+        };
+    }
+
+    protected async getAuthenticatedRepository(userId: number, noProtocolURL: string) {
         const [host] = noProtocolURL.split('/');
 
         if (!host) throw new BadRequestError('Missing Git repository host');
@@ -86,11 +105,18 @@ export class GitFileService {
         if (!credential?.accessToken || !credential.userName)
             throw new NotFoundError(`${platform} OAuth credential is not found`);
 
-        return `https://${credential.userName}:${credential.accessToken}@${noProtocolURL}`;
+        return {
+            repositoryURL: `https://${noProtocolURL}`,
+            env: this.getGitAuthenticationEnv(host, credential.userName, credential.accessToken)
+        };
     }
 
-    protected async getDefaultBranch(GitURL: string) {
-        const { stdout } = await this.runCommand('git', ['ls-remote', '--symref', GitURL, 'HEAD']);
+    protected async getDefaultBranch(GitURL: string, options: ExecFileOptions) {
+        const { stdout } = await this.runCommand(
+            'git',
+            ['ls-remote', '--symref', GitURL, 'HEAD'],
+            options
+        );
         const matched = stdout.match(/ref:\s+refs\/heads\/([^\s]+)\s+HEAD/);
 
         if (!matched) throw new BadRequestError('Failed to detect default Git branch');
@@ -105,6 +131,9 @@ export class GitFileService {
         const outside = relative(repositoryFolder, targetPath);
 
         if (outside.startsWith('..') || outside.includes(`..${sep}`) || outside === '')
+            throw new BadRequestError(`Invalid repository path: ${fieldname}`);
+
+        if (outside.split(sep).some(segment => segment === '.git'))
             throw new BadRequestError(`Invalid repository path: ${fieldname}`);
 
         return targetPath;
@@ -127,38 +156,30 @@ export class GitFileService {
     ): Promise<GitUploadResult> {
         if (!files.length) throw new BadRequestError('No file uploaded');
 
-        const repositoryUrl = `https://${noProtocolURL}`;
-        const authenticatedRepositoryURL = await this.getAuthenticatedRepositoryURL(
-            userId,
-            noProtocolURL
-        );
-        const branch = await this.getDefaultBranch(authenticatedRepositoryURL);
+        const { repositoryURL, env } = await this.getAuthenticatedRepository(userId, noProtocolURL);
+        const commandOptions = { env: { ...process.env, ...env } };
+        const branch = await this.getDefaultBranch(repositoryURL, commandOptions);
         const workspace = await mkdtemp(resolve(this.tempRoot, 'hop-git-file-'));
         const repositoryFolder = resolve(workspace, 'repository');
 
         await mkdir(repositoryFolder, { recursive: true });
 
         try {
-            await this.runCommand(process.execPath, [
-                this.gitUtilityCLI,
-                'download',
-                authenticatedRepositoryURL,
-                branch,
-                undefined,
-                repositoryFolder
-            ]);
+            await this.runCommand(
+                process.execPath,
+                [this.gitUtilityCLI, 'download', repositoryURL, branch, '', repositoryFolder],
+                commandOptions
+            );
 
             for (const file of files) await this.copyIncomingFile(repositoryFolder, file);
 
-            await this.runCommand(process.execPath, [
-                this.gitUtilityCLI,
-                'upload',
-                repositoryFolder,
-                authenticatedRepositoryURL,
-                branch
-            ]);
+            await this.runCommand(
+                process.execPath,
+                [this.gitUtilityCLI, 'upload', repositoryFolder, repositoryURL, branch],
+                commandOptions
+            );
 
-            return { repositoryUrl, branch, fileCount: files.length };
+            return { repositoryUrl: repositoryURL, branch, fileCount: files.length };
         } finally {
             await rm(workspace, { recursive: true, force: true });
         }
