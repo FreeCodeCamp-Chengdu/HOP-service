@@ -6,8 +6,9 @@ export const hasGitSegment = (rel: string): boolean =>
 /**
  * Builds the repo-URL policy pattern for a given platform domain.
  * Accepts:  domain/owner/repo   and   domain/owner/repo.git
- * Rejects:  domain/owner/repoXgit  (any suffix ending in 'git' that isn't '.git')
- *           empty owner/repo segments, nested paths, lookalike domains.
+ *           Repo names that naturally end in "git" (e.g. "legit", "digit") are
+ *           valid — the URL is fully anchored so no lookalike attack is possible.
+ * Rejects:  empty owner/repo segments, nested paths, lookalike domains.
  */
 export const buildRepoPattern = (domain: string): RegExp =>
-    new RegExp(`^${escapeRegExp(domain)}/[^/]+/(?:[^/]+\\.git|[^/]+(?<!git))$`);
+    new RegExp(`^${escapeRegExp(domain)}/[^/]+/[^/]+(?:\\.git)?$`);

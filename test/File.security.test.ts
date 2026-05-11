@@ -42,12 +42,20 @@ describe('Repo URL regex — github.com', () => {
         expect(pattern.test('github.com.evil/owner/repo')).toBe(false);
     });
 
-    it('rejects repoXgit (suffix ending in git that is not .git)', () => {
-        expect(pattern.test('github.com/owner/repoXgit')).toBe(false);
+    it('accepts repoXgit (valid repo name; URL is fully anchored so no spoofing possible)', () => {
+        expect(pattern.test('github.com/owner/repoXgit')).toBe(true);
     });
 
-    it('rejects repogit (bare git suffix without dot)', () => {
-        expect(pattern.test('github.com/owner/repogit')).toBe(false);
+    it('accepts repogit (valid repo name; fully anchored URL prevents spoofing)', () => {
+        expect(pattern.test('github.com/owner/repogit')).toBe(true);
+    });
+
+    it('accepts legit (legitimate English word ending in git)', () => {
+        expect(pattern.test('github.com/owner/legit')).toBe(true);
+    });
+
+    it('accepts widget (legitimate repo name)', () => {
+        expect(pattern.test('github.com/owner/widget')).toBe(true);
     });
 
     it('rejects empty owner segment', () => {

@@ -136,7 +136,7 @@ export class FileController {
         const cloneDir = await fs.mkdtemp(join(tmpdir(), 'hop-git-clone-'));
 
         try {
-            await Promise.all(
+            const validatedPaths = await Promise.all(
                 uploadedFiles.map(async file => {
                     const rel = relative(workDir, resolve(workDir, file.fieldname));
 
@@ -159,6 +159,7 @@ export class FileController {
                         await fs.mkdir(destDir, { recursive: true });
 
                     await fs.rename(file.path, destPath);
+                    return rel;
                 })
             );
 
@@ -191,8 +192,9 @@ export class FileController {
                 GIT_PASSWORD: credential.accessToken
             };
 
+            const GIT_TIMEOUT = 60_000;
             const git = (...args: string[]) =>
-                execFileAsync('git', args, { env: gitEnv });
+                execFileAsync('git', args, { env: gitEnv, timeout: GIT_TIMEOUT, killSignal: 'SIGKILL' });
 
             // 6. Clone target branch into cloneDir; fall back to default branch and
             //    create the branch locally if it does not exist on the remote yet.
@@ -219,7 +221,20 @@ export class FileController {
             // residual .git/config manipulation
             await git('-C', cloneDir, 'remote', 'set-url', 'origin', repoURL);
 
-            await git('-C', cloneDir, 'add', '.');
+            // Force-add only the explicitly uploaded paths so .gitignore cannot
+            // silently drop files the caller deliberately submitted.
+            await git('-C', cloneDir, 'add', '--force', '--', ...validatedPaths);
+
+            // Skip commit/push if nothing was actually staged (files identical to HEAD).
+            const { stdout: stagedOutput } = await git(
+                '-C',
+                cloneDir,
+                'diff',
+                '--cached',
+                '--name-only'
+            );
+            if (!String(stagedOutput).trim()) return;
+
             await git(
                 '-C',
                 cloneDir,
