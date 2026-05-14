@@ -51,7 +51,8 @@ export class OauthController {
             platform,
             user: { id: user.id }
         });
-        await this.credentialStore.save({ ...existing, platform, accessToken, user });
+        const username = 'username' in profile ? (profile as { username?: string }).username : profile.name;
+        await this.credentialStore.save({ ...existing, platform, accessToken, username, user });
 
         return sessionService.sign(user);
     }
@@ -71,8 +72,9 @@ export class OauthController {
         return this.syncProfile(email, OAuthPlatform.GitHub, accessToken, {
             name: login,
             avatar: avatar_url,
-            languages: parseLanguageHeader(acceptLanguage ?? '')
-        });
+            languages: parseLanguageHeader(acceptLanguage ?? ''),
+            username: login
+        } as Partial<Pick<User, 'name' | 'avatar' | 'languages'> & { username: string }>);
     }
 
     @Post('/CNB')
@@ -103,7 +105,8 @@ export class OauthController {
         return this.syncProfile(email, OAuthPlatform.CNB, accessToken, {
             name: nickname || username,
             avatar,
-            languages: parseLanguageHeader(acceptLanguage ?? '')
-        });
+            languages: parseLanguageHeader(acceptLanguage ?? ''),
+            username
+        } as Partial<Pick<User, 'name' | 'avatar' | 'languages'> & { username: string }>);
     }
 }

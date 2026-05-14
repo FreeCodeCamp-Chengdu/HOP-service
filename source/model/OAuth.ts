@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsEnum, IsString, ValidateNested } from 'class-validator';
+import { IsEnum, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { Column, Entity, ManyToOne } from 'typeorm';
 
 import { Base } from './Base';
@@ -16,6 +16,12 @@ export enum OAuthPlatform {
     CNB = 'CNB'
 }
 
+export const PlatformDomainMap: Record<OAuthPlatform, string> = {
+    [OAuthPlatform.GitHub]: 'github.com',
+    [OAuthPlatform.GitLab]: 'gitlab.com',
+    [OAuthPlatform.CNB]: 'cnb.cool'
+};
+
 @Entity()
 export class OAuthCredential extends Base {
     @IsEnum(OAuthPlatform)
@@ -25,6 +31,11 @@ export class OAuthCredential extends Base {
     @IsString()
     @Column()
     accessToken: string;
+
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
+    username?: string;
 
     @Type(() => User)
     @ValidateNested()

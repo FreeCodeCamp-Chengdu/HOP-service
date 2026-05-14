@@ -13,6 +13,7 @@ import { BaseController } from './Base';
 import { EnrollmentController } from './Enrollment';
 import { EvaluationController } from './Evaluation';
 import { FileController } from './File';
+import { GitFileController } from './GitFile';
 import { GitTemplateController } from './GitTemplate';
 import { HackathonController } from './Hackathon';
 import { OauthController } from './OAuth';
@@ -32,6 +33,7 @@ export * from './Base';
 export * from './Enrollment';
 export * from './Evaluation';
 export * from './File';
+export * from './GitFile';
 export * from './GitTemplate';
 export * from './Hackathon';
 export * from './OAuth';
@@ -50,6 +52,7 @@ export const controllers = [
     PlatformAdminController,
     ActivityLogController,
     FileController,
+    GitFileController,
     StaffController,
     OrganizerController,
     EnrollmentController,
