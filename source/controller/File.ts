@@ -85,7 +85,7 @@ export class FileController {
         try {
             return await this.gitFileService.uploadFilesToRepository(id, noProtocolURL, files);
         } finally {
-            await Promise.all(files.map(({ path }) => rm(path, { force: true })));
+            await Promise.allSettled(files.map(({ path }) => rm(path, { force: true })));
         }
     }
 }
