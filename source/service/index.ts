@@ -3,6 +3,7 @@ export * from './Award';
 export * from './Base';
 export * from './Email';
 export * from './Enrollment';
+export * from './GitFile';
 export * from './GitTemplate';
 export * from './Hackathon';
 export * from './PlatformAdmin';
