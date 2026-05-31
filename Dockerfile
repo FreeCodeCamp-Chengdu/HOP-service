@@ -2,7 +2,9 @@
 
 FROM node:22-slim AS base
 RUN apt-get update && \
-    apt-get install curl git -y --no-install-recommends
+    apt-get install curl git -y --no-install-recommends && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN npm i pnpm@latest -g

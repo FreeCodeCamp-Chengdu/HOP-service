@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
 
@@ -157,6 +157,53 @@ describe('GitFileService', () => {
                     { fieldname: 'docs/.GIT/config', path: incomingFile }
                 ])
             ).rejects.toThrow('Invalid repository path');
+        } finally {
+            await rm(tempRoot, { recursive: true, force: true });
+        }
+    });
+
+    it('rejects uploads through symlinked repository ancestors', async () => {
+        const tempRoot = await mkdtemp(join(tmpdir(), 'hop-git-file-test-'));
+        const incomingFile = join(tempRoot, 'escape-upload.bin');
+        const escapeTarget = join(tempRoot, 'outside');
+
+        try {
+            await mkdir(escapeTarget, { recursive: true });
+            await writeFile(incomingFile, 'must not escape');
+
+            const service = new GitFileService({
+                credentialStore: {
+                    findOneBy: jest.fn().mockResolvedValue({
+                        platform: OAuthPlatform.GitHub,
+                        userName: 'alice',
+                        accessToken: 'secret-token'
+                    })
+                },
+                tempRoot,
+                runCommand: jest.fn(async (command: string, args: string[]) => {
+                    if (command === 'git' && args[0] === 'ls-remote')
+                        return { stdout: 'ref: refs/heads/main\tHEAD\nabc123\tHEAD\n' };
+
+                    if (command === process.execPath && args[1] === 'download') {
+                        const repositoryFolder = args[5];
+
+                        await mkdir(repositoryFolder, { recursive: true });
+                        await symlink(escapeTarget, join(repositoryFolder, 'docs'));
+
+                        return { stdout: '' };
+                    }
+
+                    throw new Error(`Unexpected command: ${command} ${args.join(' ')}`);
+                })
+            });
+
+            await expect(
+                service.uploadFilesToRepository(7, 'github.com/freeCodeCamp-Chengdu/HOP-service', [
+                    { fieldname: 'docs/guide.md', path: incomingFile }
+                ])
+            ).rejects.toThrow('Invalid repository path');
+
+            await expect(readFile(join(escapeTarget, 'guide.md'), 'utf8')).rejects.toThrow();
         } finally {
             await rm(tempRoot, { recursive: true, force: true });
         }

@@ -1,5 +1,5 @@
 import { execFile, ExecFileOptions } from 'child_process';
-import { copyFile, mkdir, mkdtemp, rm } from 'fs/promises';
+import { copyFile, lstat, mkdir, mkdtemp, realpath, rm } from 'fs/promises';
 import { tmpdir } from 'os';
 import { dirname, relative, resolve, sep } from 'path';
 import { BadRequestError, NotFoundError } from 'routing-controllers';
@@ -64,7 +64,12 @@ export class GitFileService {
         const { stdout } = await execFileAsync(
             command,
             args.filter((value): value is string => value !== undefined),
-            { maxBuffer: 10 * 1024 * 1024, ...options }
+            {
+                maxBuffer: 10 * 1024 * 1024,
+                timeout: 60_000,
+                killSignal: 'SIGKILL',
+                ...options
+            }
         );
 
         return { stdout: stdout.toString() };
@@ -153,8 +158,42 @@ export class GitFileService {
     ) {
         const targetPath = this.resolveRepositoryPath(repositoryFolder, fieldname);
 
+        await this.assertSafeRepositoryAncestors(repositoryFolder, targetPath, fieldname);
         await mkdir(dirname(targetPath), { recursive: true });
         await copyFile(path, targetPath);
+    }
+
+    protected async assertSafeRepositoryAncestors(
+        repositoryFolder: string,
+        targetPath: string,
+        fieldname: string
+    ) {
+        const repositoryRealPath = await realpath(repositoryFolder);
+        const relativeTarget = relative(repositoryFolder, targetPath);
+        const segments = relativeTarget.split(sep).filter(Boolean).slice(0, -1);
+        let cursor = repositoryFolder;
+
+        for (const segment of segments) {
+            cursor = resolve(cursor, segment);
+
+            try {
+                const stat = await lstat(cursor);
+
+                if (stat.isSymbolicLink())
+                    throw new BadRequestError(`Invalid repository path: ${fieldname}`);
+
+                const ancestorRealPath = await realpath(cursor);
+                const outsideRepository =
+                    ancestorRealPath !== repositoryRealPath &&
+                    !ancestorRealPath.startsWith(`${repositoryRealPath}${sep}`);
+
+                if (outsideRepository)
+                    throw new BadRequestError(`Invalid repository path: ${fieldname}`);
+            } catch (error) {
+                if (error instanceof BadRequestError) throw error;
+                if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+            }
+        }
     }
 
     async uploadFilesToRepository(
