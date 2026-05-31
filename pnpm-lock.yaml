@@ -44,6 +44,9 @@ importers:
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
+      git-utility:
+        specifier: ^0.3.0
+        version: 0.3.0(typescript@5.9.3)
       html-escaper:
         specifier: ^3.0.3
         version: 3.0.3
@@ -159,9 +162,6 @@ importers:
       eslint-plugin-simple-import-sort:
         specifier: ^13.0.0
         version: 13.0.0(eslint@10.3.0(jiti@2.7.0))
-      git-utility:
-        specifier: ^0.3.0
-        version: 0.3.0(typescript@5.9.3)
       globals:
         specifier: ^17.6.0
         version: 17.6.0
