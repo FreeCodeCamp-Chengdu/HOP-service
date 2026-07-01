@@ -1,0 +1,598 @@
+FAIL test/main.test.ts
+  Main business logic
+    ✕ should response 401 error with invalid token (7 ms)
+    ✕ should create the first Administator only by the first User (2 ms)
+    ✕ should sign in a User with Email & Password
+    ✕ should get the profile of signed-in User with a valid token
+    ✕ should get a User's profile by its ID
+    ✕ should edit the profile of signed-in User
+    ✕ should record 2 activities of a signed-up & edited User
+    ✕ should be able to search users by part of email or name
+    ✕ should create a new hackathon by every user (1 ms)
+    ✕ should auto set the creator as an admin of this hackathon (1 ms)
+    ✕ should get the detail by a hackathon name
+    ✕ should update partial information by the hackathon admin
+    ✕ should only show Online hackathons to non-admins in the list (1 ms)
+    ✕ should forbid anonymous access to a non-Online hackathon detail
+    ✕ should get the list of hackathons
+    ✕ should search hackathons by keywords
+    ✕ should find hackathon by its creator
+    ✕ should sign up & in a new User with a GitHub token (1 ms)
+    ✕ should sign in & update an existed User with a GitHub token (2 ms)
+    ✕ should forbid non-staff authenticated users from accessing a non-Online hackathon detail
+    ✕ should allow all users to access a hackathon after it is approved (set to Online)
+    ✕ should create an award for the hackathon
+    ✕ should get an award by id
+    ✕ should update an award
+    ✕ should not allow unauthorized users to manage awards
+    ✕ should add Standard dimensions to a hackathon
+    ✕ should enroll a user in the hackathon
+    ✕ should create a hackathon team by a participant
+    ✕ should get the created team by its Hackathon Name & ID
+    ✕ should update the team by its members
+    ✕ should not allow unauthorized users to update a team
+    ✕ should get the list of teams in the hackathon
+    ✕ should allow anyone to evaluate the team
+    ✕ should get the evaluations & final score of a team
+    ✕ should assign an award to a team by hackathon staffs
+    ✕ should get the list of award assignments for a hackathon
+    ✕ should delete a hackathon by its admin
+
+  ● Main business logic › should response 401 error with invalid token
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 401
+    Received: undefined
+
+      23 |             fail('it should have thrown a 403 error');
+      24 |         } catch (error) {
+    > 25 |             expect((error as HttpResponse<unknown>).status).toBe(401);
+         |                                                             ^
+      26 |         }
+      27 |     });
+      28 |
+
+      at Object.<anonymous> (test/main.test.ts:25:61)
+
+  ● Main business logic › should create the first Administator only by the first User
+
+    TypeError: fetch failed
+
+      30 |         const platformAdminAccount = { email: 'admin@test.com', password: 'admin' };
+      31 |
+    > 32 |         const { data: user1 } = await client.user.userControllerSignUp(platformAdminAccount);
+         |                                 ^
+      33 |
+      34 |         expect(user1.email).toBe(platformAdminAccount.email);
+      35 |         expect(user1.roles).toEqual([0]);
+
+      at Object.<anonymous> (test/main.test.ts:32:33)
+
+    Cause:
+    connect ECONNREFUSED 127.0.0.1:8080
+
+
+
+  ● Main business logic › should sign in a User with Email & Password
+
+    TypeError: Cannot read properties of undefined (reading 'email')
+
+      53 |     it('should sign in a User with Email & Password', async () => {
+      54 |         const { data: session } = await client.user.userControllerSignIn({
+    > 55 |             email: hackathonCreator.email,
+         |                                     ^
+      56 |             password: hackathonCreator.password
+      57 |         });
+      58 |
+
+      at Object.<anonymous> (test/main.test.ts:55:37)
+
+  ● Main business logic › should get the profile of signed-in User with a valid token
+
+    TypeError: Cannot read properties of undefined (reading 'token')
+
+      73 |     it('should get the profile of signed-in User with a valid token', async () => {
+      74 |         const { data: session } = await client.user.userControllerGetSession({
+    > 75 |             headers: { Authorization: `Bearer ${hackathonCreator.token}` }
+         |                                                                  ^
+      76 |         });
+      77 |         const { password, token, deletedAt, ...user } = hackathonCreator;
+      78 |
+
+      at Object.<anonymous> (test/main.test.ts:75:66)
+
+  ● Main business logic › should get a User's profile by its ID
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      81 |
+      82 |     it("should get a User's profile by its ID", async () => {
+    > 83 |         const { data: user } = await client.user.userControllerGetOne(hackathonCreator.id);
+         |                                                                                        ^
+      84 |
+      85 |         const { password, token, deletedAt, ...profile } = hackathonCreator;
+      86 |
+
+      at Object.<anonymous> (test/main.test.ts:83:88)
+
+  ● Main business logic › should edit the profile of signed-in User
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      92 |
+      93 |         const { data: user } = await client.user.userControllerUpdateOne(
+    > 94 |             hackathonCreator.id,
+         |                              ^
+      95 |             newProfile,
+      96 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+      97 |         );
+
+      at Object.<anonymous> (test/main.test.ts:94:30)
+
+  ● Main business logic › should record 2 activities of a signed-up & edited User
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      104 |
+      105 |     it('should record 2 activities of a signed-up & edited User', async () => {
+    > 106 |         const UID = hackathonCreator.id;
+          |                                      ^
+      107 |         const activityLog = {
+      108 |                 ...baseData,
+      109 |                 tableName: 'User',
+
+      at Object.<anonymous> (test/main.test.ts:106:38)
+
+  ● Main business logic › should be able to search users by part of email or name
+
+    TypeError: Cannot read properties of undefined (reading 'email')
+
+      124 |     it('should be able to search users by part of email or name', async () => {
+      125 |         const { data: result_1 } = await client.user.userControllerGetList({
+    > 126 |             keywords: platformAdmin.email
+          |                                     ^
+      127 |         });
+      128 |         expect(result_1.count).toBe(1);
+      129 |         expect(result_1.list[0].id).toBe(platformAdmin.id);
+
+      at Object.<anonymous> (test/main.test.ts:126:37)
+
+  ● Main business logic › should create a new hackathon by every user
+
+    TypeError: Cannot read properties of undefined (reading 'token')
+
+      170 |                 judgeEndedAt: eventEndedAt
+      171 |             },
+    > 172 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+          |                                                                    ^
+      173 |         );
+      174 |         expect(hackathon).toMatchObject({
+      175 |             ...baseData,
+
+      at Object.<anonymous> (test/main.test.ts:172:68)
+
+  ● Main business logic › should auto set the creator as an admin of this hackathon
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      184 |     it('should auto set the creator as an admin of this hackathon', async () => {
+      185 |         const { data: staffList } = await client.hackathon.staffControllerGetList(
+    > 186 |             testHackathon.name,
+          |                           ^
+      187 |             'admin'
+      188 |         );
+      189 |         expect(staffList).toMatchObject({
+
+      at Object.<anonymous> (test/main.test.ts:186:27)
+
+  ● Main business logic › should get the detail by a hackathon name
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      204 |
+      205 |     it('should get the detail by a hackathon name', async () => {
+    > 206 |         const { data } = await client.hackathon.hackathonControllerGetOne(testHackathon.name, {
+          |                                                                                         ^
+      207 |             headers: { Authorization: `Bearer ${hackathonCreator.token}` }
+      208 |         });
+      209 |         expect(data.id).toBe(testHackathon.id);
+
+      at Object.<anonymous> (test/main.test.ts:206:89)
+
+  ● Main business logic › should update partial information by the hackathon admin
+
+    TypeError: Cannot set properties of undefined (setting 'tags')
+
+      219 |
+      220 |     it('should update partial information by the hackathon admin', async () => {
+    > 221 |         testHackathon.tags = ['test', 'example'];
+          |                           ^
+      222 |         testHackathon.detail += '<p>Example</p>';
+      223 |
+      224 |         const { data } = await client.hackathon.hackathonControllerUpdateOne(
+
+      at Object.<anonymous> (test/main.test.ts:221:27)
+
+  ● Main business logic › should only show Online hackathons to non-admins in the list
+
+    TypeError: fetch failed
+
+      238 |     it('should only show Online hackathons to non-admins in the list', async () => {
+      239 |         // Hackathon is in 'planning' status — non-admins and anonymous users only see Online ones
+    > 240 |         const { data: anonList } = await client.hackathon.hackathonControllerGetList();
+          |                                    ^
+      241 |
+      242 |         expect(anonList).toEqual({ count: 0, list: [] });
+      243 |
+
+      at Object.<anonymous> (test/main.test.ts:240:36)
+
+    Cause:
+    connect ECONNREFUSED 127.0.0.1:8080
+
+
+
+  ● Main business logic › should forbid anonymous access to a non-Online hackathon detail
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: undefined
+
+      256 |             fail('Should have thrown a 403 error');
+      257 |         } catch (error) {
+    > 258 |             expect((error as HttpResponse<unknown>).status).toBe(403);
+          |                                                             ^
+      259 |         }
+      260 |     });
+      261 |
+
+      at Object.<anonymous> (test/main.test.ts:258:61)
+
+  ● Main business logic › should get the list of hackathons
+
+    TypeError: Cannot read properties of undefined (reading 'token')
+
+      263 |         const { data: list1 } = await client.hackathon.hackathonControllerGetList(
+      264 |             {},
+    > 265 |             { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+          |                                                                 ^
+      266 |         );
+      267 |
+      268 |         expect(list1).toEqual({ count: 1, list: [testHackathon] });
+
+      at Object.<anonymous> (test/main.test.ts:265:65)
+
+  ● Main business logic › should search hackathons by keywords
+
+    TypeError: Cannot read properties of undefined (reading 'token')
+
+      278 |         const { data: list } = await client.hackathon.hackathonControllerGetList(
+      279 |             { keywords: 'example' },
+    > 280 |             { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+          |                                                                 ^
+      281 |         );
+      282 |         expect(list).toEqual({ count: 1, list: [testHackathon] });
+      283 |
+
+      at Object.<anonymous> (test/main.test.ts:280:65)
+
+  ● Main business logic › should find hackathon by its creator
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+      291 |     it('should find hackathon by its creator', async () => {
+      292 |         const { data } = await client.hackathon.hackathonControllerGetList(
+    > 293 |             { createdBy: hackathonCreator.id },
+          |                                           ^
+      294 |             { headers: { Authorization: `Bearer ${platformAdmin.token}` } }
+      295 |         );
+      296 |         expect(data).toEqual({ count: 1, list: [testHackathon] });
+
+      at Object.<anonymous> (test/main.test.ts:293:43)
+
+  ● Main business logic › should sign up & in a new User with a GitHub token
+
+    TypeError: fetch failed
+
+      298 |
+      299 |     it('should sign up & in a new User with a GitHub token', async () => {
+    > 300 |         const { status, data: session } = await client.user.oauthControllerSignInWithGithub({
+          |                                           ^
+      301 |             accessToken: GITHUB_PAT
+      302 |         });
+      303 |         expect(status).toBe(201);
+
+      at Object.<anonymous> (test/main.test.ts:300:43)
+
+    Cause:
+    connect ECONNREFUSED 127.0.0.1:8080
+
+
+
+  ● Main business logic › should sign in & update an existed User with a GitHub token
+
+    TypeError: fetch failed
+
+      322 |
+      323 |     it('should sign in & update an existed User with a GitHub token', async () => {
+    > 324 |         const { data: list1 } = await client.user.userControllerGetList();
+          |                                 ^
+      325 |
+      326 |         await client.user.oauthControllerSignInWithGithub({
+      327 |             accessToken: GITHUB_PAT
+
+      at Object.<anonymous> (test/main.test.ts:324:33)
+
+    Cause:
+    connect ECONNREFUSED 127.0.0.1:8080
+
+
+
+  ● Main business logic › should forbid non-staff authenticated users from accessing a non-Online hackathon detail
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: undefined
+
+      340 |             fail('Should have thrown a 403 error');
+      341 |         } catch (error) {
+    > 342 |             expect((error as HttpResponse<unknown>).status).toBe(403);
+          |                                                             ^
+      343 |         }
+      344 |     });
+      345 |
+
+      at Object.<anonymous> (test/main.test.ts:342:61)
+
+  ● Main business logic › should allow all users to access a hackathon after it is approved (set to Online)
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      347 |         // Hackathon admin updates status to Online (simulating platform admin approval)
+      348 |         const { data: approved } = await client.hackathon.hackathonControllerUpdateOne(
+    > 349 |             testHackathon.name,
+          |                           ^
+      350 |             { ...testHackathon, status: 'online' },
+      351 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+      352 |         );
+
+      at Object.<anonymous> (test/main.test.ts:349:27)
+
+  ● Main business logic › should create an award for the hackathon
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      394 |         };
+      395 |         const { data: award } = await client.hackathon.awardControllerCreateOne(
+    > 396 |             testHackathon.name,
+          |                           ^
+      397 |             awardData,
+      398 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+      399 |         );
+
+      at Object.<anonymous> (test/main.test.ts:396:27)
+
+  ● Main business logic › should get an award by id
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      410 |     it('should get an award by id', async () => {
+      411 |         const { data: award } = await client.hackathon.awardControllerGetOne(
+    > 412 |             testHackathon.name,
+          |                           ^
+      413 |             testAward.id
+      414 |         );
+      415 |
+
+      at Object.<anonymous> (test/main.test.ts:412:27)
+
+  ● Main business logic › should update an award
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      432 |
+      433 |         const { data: award } = await client.hackathon.awardControllerUpdateOne(
+    > 434 |             testHackathon.name,
+          |                           ^
+      435 |             testAward.id,
+      436 |             updateData,
+      437 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+
+      at Object.<anonymous> (test/main.test.ts:434:27)
+
+  ● Main business logic › should not allow unauthorized users to manage awards
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 401
+    Received: undefined
+
+      455 |             fail('Should have thrown a 401 error');
+      456 |         } catch (error) {
+    > 457 |             expect((error as HttpResponse<unknown>).status).toBe(401);
+          |                                                             ^
+      458 |         }
+      459 |     });
+      460 |
+
+      at Object.<anonymous> (test/main.test.ts:457:61)
+
+  ● Main business logic › should add Standard dimensions to a hackathon
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      480 |         };
+      481 |         const { data } = await client.hackathon.surveyControllerUpdateStandard(
+    > 482 |             testHackathon.name,
+          |                           ^
+      483 |             standard,
+      484 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+      485 |         );
+
+      at Object.<anonymous> (test/main.test.ts:482:27)
+
+  ● Main business logic › should enroll a user in the hackathon
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      493 |     it('should enroll a user in the hackathon', async () => {
+      494 |         const { data: enrollment } = await client.hackathon.enrollmentControllerCreateOne(
+    > 495 |             testHackathon.name,
+          |                           ^
+      496 |             { form: [] },
+      497 |             { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
+      498 |         );
+
+      at Object.<anonymous> (test/main.test.ts:495:27)
+
+  ● Main business logic › should create a hackathon team by a participant
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      514 |         };
+      515 |         const { data: team } = await client.hackathon.teamControllerCreateOne(
+    > 516 |             testHackathon.name,
+          |                           ^
+      517 |             newTeam,
+      518 |             { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
+      519 |         );
+
+      at Object.<anonymous> (test/main.test.ts:516:27)
+
+  ● Main business logic › should get the created team by its Hackathon Name & ID
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      526 |     it('should get the created team by its Hackathon Name & ID', async () => {
+      527 |         const { data: team } = await client.hackathon.teamControllerGetOne(
+    > 528 |             testHackathon.name,
+          |                           ^
+      529 |             testTeam.id
+      530 |         );
+      531 |         expect(team).toMatchObject({
+
+      at Object.<anonymous> (test/main.test.ts:528:27)
+
+  ● Main business logic › should update the team by its members
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      543 |         };
+      544 |         const { data: team } = await client.hackathon.teamControllerUpdateOne(
+    > 545 |             testHackathon.name,
+          |                           ^
+      546 |             testTeam.id,
+      547 |             updateData,
+      548 |             { headers: { Authorization: `Bearer ${teamLeader1.token}` } }
+
+      at Object.<anonymous> (test/main.test.ts:545:27)
+
+  ● Main business logic › should not allow unauthorized users to update a team
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 403
+    Received: undefined
+
+      565 |             fail('it should have thrown a 403 error');
+      566 |         } catch (error) {
+    > 567 |             expect((error as HttpResponse<unknown>).status).toBe(403);
+          |                                                             ^
+      568 |         }
+      569 |     });
+      570 |
+
+      at Object.<anonymous> (test/main.test.ts:567:61)
+
+  ● Main business logic › should get the list of teams in the hackathon
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      570 |
+      571 |     it('should get the list of teams in the hackathon', async () => {
+    > 572 |         const { data: teamList } = await client.hackathon.teamControllerGetList(testHackathon.name);
+          |                                                                                               ^
+      573 |
+      574 |         expect(teamList.count).toBe(1);
+      575 |         expect(teamList.list[0].id).toBe(testTeam.id);
+
+      at Object.<anonymous> (test/main.test.ts:572:95)
+
+  ● Main business logic › should allow anyone to evaluate the team
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      583 |         ];
+      584 |         const { data: data1 } = await client.hackathon.evaluationControllerCreateOne(
+    > 585 |             testHackathon.name,
+          |                           ^
+      586 |             testTeam.id,
+      587 |             { scores: scores1 },
+      588 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+
+      at Object.<anonymous> (test/main.test.ts:585:27)
+
+  ● Main business logic › should get the evaluations & final score of a team
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      616 |     it('should get the evaluations & final score of a team', async () => {
+      617 |         const { data: evaluations } = await client.hackathon.evaluationControllerGetList(
+    > 618 |             testHackathon.name,
+          |                           ^
+      619 |             testTeam.id
+      620 |         );
+      621 |         expect(evaluations.count).toBe(2);
+
+      at Object.<anonymous> (test/main.test.ts:618:27)
+
+  ● Main business logic › should assign an award to a team by hackathon staffs
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      637 |     it('should assign an award to a team by hackathon staffs', async () => {
+      638 |         const { data: assignment } = await client.hackathon.awardAssignmentControllerCreateOne(
+    > 639 |             testHackathon.name,
+          |                           ^
+      640 |             testAward.id,
+      641 |             { team: testTeam },
+      642 |             { headers: { Authorization: `Bearer ${hackathonCreator.token}` } }
+
+      at Object.<anonymous> (test/main.test.ts:639:27)
+
+  ● Main business logic › should get the list of award assignments for a hackathon
+
+    TypeError: Cannot read properties of undefined (reading 'name')
+
+      648 |     it('should get the list of award assignments for a hackathon', async () => {
+      649 |         const { data: awardAssignments } = await client.hackathon.awardAssignmentControllerGetList(
+    > 650 |             testHackathon.name,
+          |                           ^
+      651 |             testAward.id
+      652 |         );
+      653 |         expect(awardAssignments.count).toBe(1);
+
+      at Object.<anonymous> (test/main.test.ts:650:27)
+
+  ● Main business logic › should delete a hackathon by its admin
+
+    TypeError: Cannot destructure property 'name' of 'testHackathon' as it is undefined.
+
+      666 |
+      667 |     it('should delete a hackathon by its admin', async () => {
+    > 668 |         const { name } = testHackathon;
+          |                 ^
+      669 |         const { status, data } = await client.hackathon.hackathonControllerDeleteOne(name, {
+      670 |             headers: { Authorization: `Bearer ${hackathonCreator.token}` }
+      671 |         });
+
+      at Object.<anonymous> (test/main.test.ts:668:17)
+
+Test Suites: 1 failed, 1 total
+Tests:       37 failed, 37 total
+Snapshots:   0 total
+Time:        1.388 s, estimated 6 s
+Ran all test suites matching /test\/main.test.ts/i.
