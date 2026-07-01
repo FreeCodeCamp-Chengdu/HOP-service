@@ -180,4 +180,51 @@ describe('GitFileService', () => {
             ])
         ).rejects.toThrow('OAuth credential is missing userName; please sign in again');
     });
+
+    it('rejects duplicate repository targets before copying files', async () => {
+        const tempRoot = await mkdtemp(join(tmpdir(), 'hop-git-file-test-'));
+        const incomingRoot = join(tempRoot, 'incoming');
+
+        try {
+            await mkdir(incomingRoot, { recursive: true });
+
+            const firstSource = join(incomingRoot, 'first-upload.bin');
+            const secondSource = join(incomingRoot, 'second-upload.bin');
+
+            await writeFile(firstSource, 'first');
+            await writeFile(secondSource, 'second');
+
+            const service = new GitFileService({
+                credentialStore: {
+                    findOneBy: jest.fn().mockResolvedValue({
+                        platform: OAuthPlatform.GitHub,
+                        userName: 'alice',
+                        accessToken: 'secret-token'
+                    })
+                },
+                tempRoot,
+                runCommand: jest.fn(async (command: string, args: string[]) => {
+                    if (command === 'git' && args[0] === 'ls-remote')
+                        return { stdout: 'ref: refs/heads/main\tHEAD\nabc123\tHEAD\n' };
+
+                    if (command === process.execPath && args[1] === 'download') {
+                        await mkdir(args[5], { recursive: true });
+
+                        return { stdout: '' };
+                    }
+
+                    throw new Error(`Unexpected command: ${command} ${args.join(' ')}`);
+                })
+            });
+
+            await expect(
+                service.uploadFilesToRepository(7, 'github.com/freeCodeCamp-Chengdu/HOP-service', [
+                    { fieldname: 'docs/a.md', path: firstSource },
+                    { fieldname: 'docs/../docs/a.md', path: secondSource }
+                ])
+            ).rejects.toThrow('Duplicate repository path');
+        } finally {
+            await rm(tempRoot, { recursive: true, force: true });
+        }
+    });
 });

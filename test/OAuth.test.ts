@@ -59,4 +59,49 @@ describe('OauthController', () => {
             })
         );
     });
+
+    it('stores CNB username as OAuth credential userName', async () => {
+        const controller = new OauthController() as unknown as OauthControllerDouble;
+
+        controller.userStore = {
+            findOneBy: jest.fn().mockResolvedValue(null),
+            save: jest.fn()
+        };
+        controller.credentialStore = {
+            findOneBy: jest.fn().mockResolvedValue(null),
+            save: jest.fn()
+        };
+
+        jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+            ok: true,
+            json: jest.fn().mockResolvedValue({
+                email: 'alice@example.com',
+                username: 'alice-cnb',
+                nickname: 'Alice',
+                avatar: 'https://avatars.example.com/alice-cnb',
+                id: '1'
+            })
+        } as never);
+        jest.spyOn(sessionService, 'signUp').mockResolvedValue({
+            id: 7,
+            email: 'alice@example.com',
+            name: 'Alice',
+            avatar: 'https://avatars.example.com/alice-cnb',
+            languages: ['en'],
+            roles: [2]
+        } as never);
+        jest.spyOn(sessionService, 'sign').mockImplementation(user => user as never);
+        jest.spyOn(activityLogService, 'logUpdate').mockResolvedValue({} as never);
+
+        await controller.signInWithCNB({ accessToken: 'secret-token' }, 'en');
+
+        expect(controller.credentialStore.save).toHaveBeenCalledWith(
+            expect.objectContaining({
+                platform: OAuthPlatform.CNB,
+                userName: 'alice-cnb',
+                accessToken: 'secret-token',
+                user: expect.objectContaining({ id: 7 })
+            })
+        );
+    });
 });

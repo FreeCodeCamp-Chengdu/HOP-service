@@ -12,38 +12,48 @@ type FileControllerDouble = Omit<FileController, 'gitFileService'> & {
 
 describe('FileController', () => {
     it('passes uploaded files to the Git file service with current user and repository URL', async () => {
+        const tempRoot = await mkdtemp(join(tmpdir(), 'hop-file-controller-test-'));
+        const guideSource = join(tempRoot, 'guide-upload.bin');
+        const codeSource = join(tempRoot, 'index-upload.bin');
         const controller = new FileController() as unknown as FileControllerDouble;
 
-        controller.gitFileService = {
-            uploadFilesToRepository: jest.fn().mockResolvedValue({
+        try {
+            await writeFile(guideSource, '# guide');
+            await writeFile(codeSource, 'export const value = 1;\n');
+
+            controller.gitFileService = {
+                uploadFilesToRepository: jest.fn().mockResolvedValue({
+                    repositoryUrl: 'https://github.com/freeCodeCamp-Chengdu/HOP-service',
+                    branch: 'main',
+                    fileCount: 2
+                })
+            };
+
+            const files = [
+                { fieldname: 'docs/guide.md', path: guideSource },
+                { fieldname: 'src/index.ts', path: codeSource }
+            ];
+
+            await expect(
+                controller.uploadGitFiles(
+                    { id: 7 } as never,
+                    'github.com/freeCodeCamp-Chengdu/HOP-service',
+                    { files } as never
+                )
+            ).resolves.toMatchObject({
                 repositoryUrl: 'https://github.com/freeCodeCamp-Chengdu/HOP-service',
                 branch: 'main',
                 fileCount: 2
-            })
-        };
+            });
 
-        const files = [
-            { fieldname: 'docs/guide.md', path: 'C:/temp/guide-upload.bin' },
-            { fieldname: 'src/index.ts', path: 'C:/temp/index-upload.bin' }
-        ];
-
-        await expect(
-            controller.uploadGitFiles(
-                { id: 7 } as never,
+            expect(controller.gitFileService.uploadFilesToRepository).toHaveBeenCalledWith(
+                7,
                 'github.com/freeCodeCamp-Chengdu/HOP-service',
-                { files } as never
-            )
-        ).resolves.toMatchObject({
-            repositoryUrl: 'https://github.com/freeCodeCamp-Chengdu/HOP-service',
-            branch: 'main',
-            fileCount: 2
-        });
-
-        expect(controller.gitFileService.uploadFilesToRepository).toHaveBeenCalledWith(
-            7,
-            'github.com/freeCodeCamp-Chengdu/HOP-service',
-            files
-        );
+                files
+            );
+        } finally {
+            await rm(tempRoot, { recursive: true, force: true });
+        }
     });
 
     it('cleans uploaded temp files when Git upload fails', async () => {

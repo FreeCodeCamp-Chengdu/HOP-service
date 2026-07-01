@@ -61,13 +61,27 @@ export class GitFileService {
         args: (string | undefined)[],
         options: ExecFileOptions = {}
     ) {
-        const { stdout } = await execFileAsync(
-            command,
-            args.filter((value): value is string => value !== undefined),
-            { maxBuffer: 10 * 1024 * 1024, ...options }
-        );
+        try {
+            const { stdout } = await execFileAsync(
+                command,
+                args.filter((value): value is string => value !== undefined),
+                {
+                    maxBuffer: 10 * 1024 * 1024,
+                    timeout: 60_000,
+                    killSignal: 'SIGKILL',
+                    ...options
+                }
+            );
 
-        return { stdout: stdout.toString() };
+            return { stdout: stdout.toString() };
+        } catch (error) {
+            const { code, message } = error as NodeJS.ErrnoException;
+            const { signal } = error as NodeJS.ErrnoException & { signal?: string };
+
+            throw new BadRequestError(
+                `Git command failed${code ? ` (${code})` : ''}${signal ? ` (${signal})` : ''}: ${message}`
+            );
+        }
     }
 
     protected getPlatformByHost(host: string) {
@@ -157,6 +171,19 @@ export class GitFileService {
         await copyFile(path, targetPath);
     }
 
+    protected assertUniqueRepositoryTargets(repositoryFolder: string, files: IncomingGitFile[]) {
+        const seenTargets = new Set<string>();
+
+        for (const { fieldname } of files) {
+            const targetPath = this.resolveRepositoryPath(repositoryFolder, fieldname);
+
+            if (seenTargets.has(targetPath))
+                throw new BadRequestError(`Duplicate repository path: ${fieldname}`);
+
+            seenTargets.add(targetPath);
+        }
+    }
+
     async uploadFilesToRepository(
         userId: number,
         noProtocolURL: string,
@@ -179,6 +206,7 @@ export class GitFileService {
                 commandOptions
             );
 
+            this.assertUniqueRepositoryTargets(repositoryFolder, files);
             for (const file of files) await this.copyIncomingFile(repositoryFolder, file);
 
             await this.runCommand(
