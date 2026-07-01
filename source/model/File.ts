@@ -1,4 +1,4 @@
-import { IsUrl } from 'class-validator';
+import { IsInt, IsString, IsUrl, Min } from 'class-validator';
 
 export class SignedLink {
     @IsUrl()
@@ -6,4 +6,16 @@ export class SignedLink {
 
     @IsUrl()
     getLink: string;
+}
+
+export class GitUploadResult {
+    @IsUrl()
+    repositoryUrl: string;
+
+    @IsString()
+    branch: string;
+
+    @IsInt()
+    @Min(0)
+    fileCount: number;
 }

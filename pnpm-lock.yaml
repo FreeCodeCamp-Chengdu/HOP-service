@@ -72,8 +72,8 @@ importers:
         specifier: ^0.4.0
         version: 0.4.0(@types/koa@3.0.2)
       marked:
-        specifier: ^18.0.3
-        version: 18.0.3
+        specifier: ^14.1.4
+        version: 14.1.4
       mobx:
         specifier: ^6.15.3
         version: 6.15.3
@@ -114,8 +114,8 @@ importers:
         specifier: ^0.3.29
         version: 0.3.29(better-sqlite3@12.9.0)(pg@8.20.0)(ts-node@10.9.2(@types/node@24.12.3)(typescript@5.9.3))
       undici:
-        specifier: ^8.2.0
-        version: 8.2.0
+        specifier: ^8.0.2
+        version: 8.0.2
       web-utility:
         specifier: ^4.6.6
         version: 4.6.6(typescript@5.9.3)
@@ -2915,14 +2915,14 @@ packages:
   makeerror@1.0.12:
     resolution: {integrity: sha512-JmqCvUhmt43madlpFzG4BQzG2Z3m6tvQDNKdClZnO3VbIudJYmxsT0FNJMeiB2+JTSlTQTSbU8QdesVmwJcmLg==}
 
-  marked@15.0.12:
-    resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
+  marked@14.1.4:
+    resolution: {integrity: sha512-vkVZ8ONmUdPnjCKc5uTRvmkRbx4EAi2OkTOXmfTDhZz3OFqMNBM1oTTWwTr4HY4uAEojhzPf+Fy8F1DWa3Sndg==}
     engines: {node: '>= 18'}
     hasBin: true
 
-  marked@18.0.3:
-    resolution: {integrity: sha512-7VT90JOkDeaRWpfjOReRGPEKn0ecdARBkDGL+tT1wZY0efPPqkUxLUSmzy/C7TIylQYJC9STISEsCHrqb/7VIA==}
-    engines: {node: '>= 20'}
+  marked@15.0.12:
+    resolution: {integrity: sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA==}
+    engines: {node: '>= 18'}
     hasBin: true
 
   math-intrinsics@1.1.0:
@@ -3997,8 +3997,8 @@ packages:
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
-  undici@8.2.0:
-    resolution: {integrity: sha512-Z+4Hx9GE26Lh9Upwfnc8C7SsrpBPGaM/Gm6kMFtiG7c+5IvQKlXi/t+9x9DrrCh29cww5TSP9YdVaBcnLDs5fQ==}
+  undici@8.0.2:
+    resolution: {integrity: sha512-B9MeU5wuFhkFAuNeA19K2GDFcQXZxq33fL0nRy2Aq30wdufZbyyvxW3/ChaeipXVfy/wUweZyzovQGk39+9k2w==}
     engines: {node: '>=22.19.0'}
 
   universalify@2.0.1:
@@ -7730,9 +7730,9 @@ snapshots:
     dependencies:
       tmpl: 1.0.5
 
-  marked@15.0.12: {}
+  marked@14.1.4: {}
 
-  marked@18.0.3: {}
+  marked@15.0.12: {}
 
   math-intrinsics@1.1.0: {}
 
@@ -8863,7 +8863,7 @@ snapshots:
 
   undici-types@7.16.0: {}
 
-  undici@8.2.0: {}
+  undici@8.0.2: {}
 
   universalify@2.0.1: {}
 
