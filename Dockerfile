@@ -1,23 +1,15 @@
-# Reference: https://pnpm.io/docker#example-1-build-a-bundle-in-a-docker-container
+FROM node:18-alpine
 
-FROM node:22-slim AS base
-RUN apt-get update && \
-    apt-get install curl -y --no-install-recommends
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN npm i pnpm@latest -g
-COPY . /app
+# Ensure git is installed
+RUN apk add --no-cache git
+
 WORKDIR /app
 
-FROM base AS prod-deps
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store  pnpm i -P --frozen-lockfile --ignore-scripts
+COPY package*.json ./
+RUN npm install
 
-FROM base AS build
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store  pnpm i --frozen-lockfile
-RUN pnpm build
+COPY . .
 
-FROM base
-COPY --from=prod-deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-EXPOSE 8080
+EXPOSE 3000
+
 CMD ["npm", "start"]
